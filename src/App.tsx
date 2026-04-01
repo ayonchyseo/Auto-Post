@@ -35,7 +35,9 @@ import {
   Image,
   Send,
   Repeat,
-  MessageSquare
+  MessageSquare,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { analyzeTrends, generateViralContent, generateVideo, generateImage, generateFreeVideoAssets, analyzeBrandVoice, repurposeContent } from './lib/gemini';
@@ -164,6 +166,7 @@ export default function App() {
 
   const [validationStatus, setValidationStatus] = useState<Record<string, { status: 'idle' | 'validating' | 'valid' | 'invalid', message?: string }>>({});
   const [isValidating, setIsValidating] = useState(false);
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const savedKeys = localStorage.getItem('viralflow_api_keys');
@@ -256,6 +259,29 @@ export default function App() {
     return Object.values(newStatus).every(s => s.status === 'valid');
   };
 
+  const clearAllKeys = () => {
+    if (confirm("Are you sure you want to clear all saved API keys? This action cannot be undone.")) {
+      const emptyKeys = {
+        telegramBotToken: '',
+        telegramChatId: '',
+        twitterApiKey: '',
+        twitterApiSecret: '',
+        twitterAccessToken: '',
+        twitterAccessSecret: '',
+        linkedinAccessToken: '',
+        linkedinAuthorUrn: '',
+        youtubeAccessToken: '',
+        youtubeChannelId: '',
+        pexelsApiKey: '',
+        elevenLabsApiKey: ''
+      };
+      setApiKeys(emptyKeys);
+      localStorage.removeItem('viralflow_api_keys');
+      setValidationStatus({});
+      alert("All API keys have been cleared.");
+    }
+  };
+
   const saveApiKeys = async () => {
     const allValid = await validateKeys();
     localStorage.setItem('viralflow_api_keys', JSON.stringify(apiKeys));
@@ -281,6 +307,43 @@ export default function App() {
       await window.aistudio.openSelectKey();
       setHasApiKey(true);
     }
+  };
+
+  const ApiKeyInput = ({ 
+    id, 
+    placeholder, 
+    value, 
+    onChange, 
+    status 
+  }: { 
+    id: string, 
+    placeholder: string, 
+    value: string, 
+    onChange: (val: string) => void,
+    status?: 'idle' | 'validating' | 'valid' | 'invalid'
+  }) => {
+    const isVisible = showKeys[id];
+    return (
+      <div className="relative group">
+        <input 
+          type={isVisible ? "text" : "password"}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            "w-full bg-black/20 border px-4 py-3 pr-12 rounded-xl text-xs focus:outline-none transition-all",
+            status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
+          )}
+        />
+        <button
+          type="button"
+          onClick={() => setShowKeys(prev => ({ ...prev, [id]: !prev[id] }))}
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-white transition-colors"
+        >
+          {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      </div>
+    );
   };
 
   const handleGenerateVideo = async () => {
@@ -1713,15 +1776,12 @@ export default function App() {
                             </span>
                           )}
                         </div>
-                        <input 
-                          type="password" 
+                        <ApiKeyInput 
+                          id="telegramBotToken"
                           placeholder="Bot Token (e.g., 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)" 
                           value={apiKeys.telegramBotToken}
-                          onChange={(e) => updateApiKey('telegramBotToken', e.target.value)}
-                          className={cn(
-                            "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
-                            validationStatus.telegramBotToken?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
-                          )}
+                          onChange={(val) => updateApiKey('telegramBotToken', val)}
+                          status={validationStatus.telegramBotToken?.status}
                         />
                         <input 
                           type="text" 
@@ -1752,24 +1812,30 @@ export default function App() {
                           )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <input 
-                            type="password" placeholder="API Key" value={apiKeys.twitterApiKey} onChange={(e) => updateApiKey('twitterApiKey', e.target.value)}
-                            className={cn(
-                              "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
-                              validationStatus.twitterApiKey?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
-                            )}
+                          <ApiKeyInput 
+                            id="twitterApiKey"
+                            placeholder="API Key" 
+                            value={apiKeys.twitterApiKey} 
+                            onChange={(val) => updateApiKey('twitterApiKey', val)}
+                            status={validationStatus.twitterApiKey?.status}
                           />
-                          <input 
-                            type="password" placeholder="API Secret" value={apiKeys.twitterApiSecret} onChange={(e) => updateApiKey('twitterApiSecret', e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          <ApiKeyInput 
+                            id="twitterApiSecret"
+                            placeholder="API Secret" 
+                            value={apiKeys.twitterApiSecret} 
+                            onChange={(val) => updateApiKey('twitterApiSecret', val)}
                           />
-                          <input 
-                            type="password" placeholder="Access Token" value={apiKeys.twitterAccessToken} onChange={(e) => updateApiKey('twitterAccessToken', e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          <ApiKeyInput 
+                            id="twitterAccessToken"
+                            placeholder="Access Token" 
+                            value={apiKeys.twitterAccessToken} 
+                            onChange={(val) => updateApiKey('twitterAccessToken', val)}
                           />
-                          <input 
-                            type="password" placeholder="Access Secret" value={apiKeys.twitterAccessSecret} onChange={(e) => updateApiKey('twitterAccessSecret', e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          <ApiKeyInput 
+                            id="twitterAccessSecret"
+                            placeholder="Access Secret" 
+                            value={apiKeys.twitterAccessSecret} 
+                            onChange={(val) => updateApiKey('twitterAccessSecret', val)}
                           />
                         </div>
                       </div>
@@ -1794,12 +1860,12 @@ export default function App() {
                           )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <input 
-                            type="password" placeholder="Access Token" value={apiKeys.linkedinAccessToken} onChange={(e) => updateApiKey('linkedinAccessToken', e.target.value)}
-                            className={cn(
-                              "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
-                              validationStatus.linkedinAccessToken?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
-                            )}
+                          <ApiKeyInput 
+                            id="linkedinAccessToken"
+                            placeholder="Access Token" 
+                            value={apiKeys.linkedinAccessToken} 
+                            onChange={(val) => updateApiKey('linkedinAccessToken', val)}
+                            status={validationStatus.linkedinAccessToken?.status}
                           />
                           <input 
                             type="text" placeholder="Author URN (e.g., urn:li:person:12345)" value={apiKeys.linkedinAuthorUrn} onChange={(e) => updateApiKey('linkedinAuthorUrn', e.target.value)}
@@ -1828,12 +1894,12 @@ export default function App() {
                           )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <input 
-                            type="password" placeholder="Access Token" value={apiKeys.youtubeAccessToken} onChange={(e) => updateApiKey('youtubeAccessToken', e.target.value)}
-                            className={cn(
-                              "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
-                              validationStatus.youtubeAccessToken?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
-                            )}
+                          <ApiKeyInput 
+                            id="youtubeAccessToken"
+                            placeholder="Access Token" 
+                            value={apiKeys.youtubeAccessToken} 
+                            onChange={(val) => updateApiKey('youtubeAccessToken', val)}
+                            status={validationStatus.youtubeAccessToken?.status}
                           />
                           <input 
                             type="text" placeholder="Channel ID (Optional)" value={apiKeys.youtubeChannelId} onChange={(e) => updateApiKey('youtubeChannelId', e.target.value)}
@@ -1861,15 +1927,12 @@ export default function App() {
                             </span>
                           )}
                         </div>
-                        <input 
-                          type="password" 
+                        <ApiKeyInput 
+                          id="pexelsApiKey"
                           placeholder="Pexels API Key" 
                           value={apiKeys.pexelsApiKey}
-                          onChange={(e) => updateApiKey('pexelsApiKey', e.target.value)}
-                          className={cn(
-                            "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
-                            validationStatus.pexelsApiKey?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
-                          )}
+                          onChange={(val) => updateApiKey('pexelsApiKey', val)}
+                          status={validationStatus.pexelsApiKey?.status}
                         />
                       </div>
                       
@@ -1892,15 +1955,12 @@ export default function App() {
                             </span>
                           )}
                         </div>
-                        <input 
-                          type="password" 
+                        <ApiKeyInput 
+                          id="elevenLabsApiKey"
                           placeholder="ElevenLabs API Key" 
                           value={apiKeys.elevenLabsApiKey}
-                          onChange={(e) => updateApiKey('elevenLabsApiKey', e.target.value)}
-                          className={cn(
-                            "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
-                            validationStatus.elevenLabsApiKey?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
-                          )}
+                          onChange={(val) => updateApiKey('elevenLabsApiKey', val)}
+                          status={validationStatus.elevenLabsApiKey?.status}
                         />
                       </div>
 
@@ -1918,6 +1978,13 @@ export default function App() {
                             Validating...
                           </div>
                         ) : "Save & Validate Keys"}
+                      </button>
+
+                      <button 
+                        onClick={clearAllKeys}
+                        className="w-full text-red-400 px-6 py-3 rounded-xl font-medium transition-all text-xs tracking-widest uppercase border border-red-500/20 hover:bg-red-500/10"
+                      >
+                        Clear All Keys
                       </button>
                     </div>
                   </div>
