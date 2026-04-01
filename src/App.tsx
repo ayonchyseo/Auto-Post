@@ -190,85 +190,65 @@ export default function App() {
     setIsValidating(true);
     const newStatus: typeof validationStatus = {};
 
+    const validate = async (type: string, credentials: any) => {
+      try {
+        const res = await fetch('/api/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, credentials })
+        });
+        const data = await res.json();
+        return data.valid ? { status: 'valid' as const } : { status: 'invalid' as const, message: data.message || 'Invalid Credentials' };
+      } catch (e) {
+        return { status: 'invalid' as const, message: 'Connection Error' };
+      }
+    };
+
     // 1. Telegram Validation
     if (apiKeys.telegramBotToken) {
       newStatus.telegramBotToken = { status: 'validating' };
       setValidationStatus({ ...newStatus });
-      try {
-        const res = await fetch(`https://api.telegram.org/bot${apiKeys.telegramBotToken}/getMe`);
-        const data = await res.json();
-        newStatus.telegramBotToken = data.ok 
-          ? { status: 'valid' } 
-          : { status: 'invalid', message: 'Invalid Bot Token' };
-      } catch (e) {
-        newStatus.telegramBotToken = { status: 'invalid', message: 'Connection Error' };
-      }
+      newStatus.telegramBotToken = await validate('telegram', { token: apiKeys.telegramBotToken });
     }
 
-    // 2. LinkedIn Validation
+    // 2. Twitter Validation
+    if (apiKeys.twitterApiKey && apiKeys.twitterApiSecret && apiKeys.twitterAccessToken && apiKeys.twitterAccessSecret) {
+      newStatus.twitterApiKey = { status: 'validating' };
+      setValidationStatus({ ...newStatus });
+      newStatus.twitterApiKey = await validate('twitter', { 
+        appKey: apiKeys.twitterApiKey, 
+        appSecret: apiKeys.twitterApiSecret, 
+        accessToken: apiKeys.twitterAccessToken, 
+        accessSecret: apiKeys.twitterAccessSecret 
+      });
+    }
+
+    // 3. LinkedIn Validation
     if (apiKeys.linkedinAccessToken) {
       newStatus.linkedinAccessToken = { status: 'validating' };
       setValidationStatus({ ...newStatus });
-      try {
-        const res = await fetch('https://api.linkedin.com/v2/me', {
-          headers: { 'Authorization': `Bearer ${apiKeys.linkedinAccessToken}` }
-        });
-        const data = await res.json();
-        newStatus.linkedinAccessToken = res.ok 
-          ? { status: 'valid' } 
-          : { status: 'invalid', message: data.message || 'Invalid Token' };
-      } catch (e) {
-        newStatus.linkedinAccessToken = { status: 'invalid', message: 'Connection Error' };
-      }
+      newStatus.linkedinAccessToken = await validate('linkedin', { token: apiKeys.linkedinAccessToken });
     }
 
-    // 3. YouTube Validation
+    // 4. YouTube Validation
     if (apiKeys.youtubeAccessToken) {
       newStatus.youtubeAccessToken = { status: 'validating' };
       setValidationStatus({ ...newStatus });
-      try {
-        const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
-          headers: { 'Authorization': `Bearer ${apiKeys.youtubeAccessToken}` }
-        });
-        const data = await res.json();
-        newStatus.youtubeAccessToken = res.ok 
-          ? { status: 'valid' } 
-          : { status: 'invalid', message: data.error?.message || 'Invalid Token' };
-      } catch (e) {
-        newStatus.youtubeAccessToken = { status: 'invalid', message: 'Connection Error' };
-      }
+      newStatus.youtubeAccessToken = await validate('youtube', { token: apiKeys.youtubeAccessToken });
     }
 
-    // 4. Pexels Validation
+    // 5. Pexels Validation
     if (apiKeys.pexelsApiKey) {
       newStatus.pexelsApiKey = { status: 'validating' };
       setValidationStatus({ ...newStatus });
-      try {
-        const res = await fetch('https://api.pexels.com/v1/curated?per_page=1', {
-          headers: { 'Authorization': apiKeys.pexelsApiKey }
-        });
-        newStatus.pexelsApiKey = res.ok 
-          ? { status: 'valid' } 
-          : { status: 'invalid', message: 'Invalid API Key' };
-      } catch (e) {
-        newStatus.pexelsApiKey = { status: 'invalid', message: 'Connection Error' };
-      }
+      newStatus.pexelsApiKey = await validate('pexels', { token: apiKeys.pexelsApiKey });
     }
 
-    // 5. ElevenLabs Validation
+    // 6. ElevenLabs Validation
     if (apiKeys.elevenLabsApiKey) {
       newStatus.elevenLabsApiKey = { status: 'validating' };
       setValidationStatus({ ...newStatus });
-      try {
-        const res = await fetch('https://api.elevenlabs.io/v1/user', {
-          headers: { 'xi-api-key': apiKeys.elevenLabsApiKey }
-        });
-        newStatus.elevenLabsApiKey = res.ok 
-          ? { status: 'valid' } 
-          : { status: 'invalid', message: 'Invalid API Key' };
-      } catch (e) {
-        newStatus.elevenLabsApiKey = { status: 'invalid', message: 'Connection Error' };
-      }
+      newStatus.elevenLabsApiKey = await validate('elevenlabs', { token: apiKeys.elevenLabsApiKey });
     }
 
     setValidationStatus(newStatus);

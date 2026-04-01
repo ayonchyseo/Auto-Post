@@ -156,6 +156,64 @@ async function startServer() {
     }
   });
 
+  app.post("/api/validate", async (req, res) => {
+    try {
+      const { type, credentials } = req.body;
+
+      if (type === 'twitter') {
+        const { appKey, appSecret, accessToken, accessSecret } = credentials;
+        const client = new TwitterApi({ appKey, appSecret, accessToken, accessSecret });
+        await client.v2.me();
+        return res.json({ valid: true });
+      }
+
+      if (type === 'telegram') {
+        const { token } = credentials;
+        const response = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+        const data = await response.json();
+        return res.json({ valid: data.ok, message: data.description });
+      }
+
+      if (type === 'linkedin') {
+        const { token } = credentials;
+        const response = await fetch('https://api.linkedin.com/v2/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return res.json({ valid: response.ok, message: data.message });
+      }
+
+      if (type === 'youtube') {
+        const { token } = credentials;
+        const response = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        return res.json({ valid: response.ok, message: data.error?.message });
+      }
+
+      if (type === 'pexels') {
+        const { token } = credentials;
+        const response = await fetch('https://api.pexels.com/v1/curated?per_page=1', {
+          headers: { 'Authorization': token }
+        });
+        return res.json({ valid: response.ok });
+      }
+
+      if (type === 'elevenlabs') {
+        const { token } = credentials;
+        const response = await fetch('https://api.elevenlabs.io/v1/user', {
+          headers: { 'xi-api-key': token }
+        });
+        return res.json({ valid: response.ok });
+      }
+
+      res.status(400).json({ error: "Unknown validation type" });
+    } catch (error: any) {
+      res.json({ valid: false, message: error.message || "Validation failed" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
