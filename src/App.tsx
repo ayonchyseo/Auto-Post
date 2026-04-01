@@ -17,7 +17,7 @@ import {
   Twitter, 
   Instagram, 
   Linkedin, 
-  Youtube,
+  Facebook,
   Loader2,
   Sparkles,
   ArrowRight,
@@ -31,11 +31,15 @@ import {
   Download,
   AlertCircle,
   Key,
-  Image
+  Image,
+  Send,
+  Repeat,
+  MessageSquare
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { analyzeTrends, generateViralContent, generateVideo, generateImage, generateFreeVideoAssets } from './lib/gemini';
+import { analyzeTrends, generateViralContent, generateVideo, generateImage, generateFreeVideoAssets, analyzeBrandVoice, repurposeContent } from './lib/gemini';
 import { cn } from './lib/utils';
+import { FreeVideoPlayer } from './components/FreeVideoPlayer';
 
 declare global {
   interface Window {
@@ -46,7 +50,7 @@ declare global {
   }
 }
 
-type Platform = 'Twitter' | 'Instagram' | 'LinkedIn' | 'TikTok' | 'YouTube';
+type Platform = 'Twitter' | 'Instagram' | 'LinkedIn' | 'Facebook' | 'Telegram';
 
 interface Trend {
   topic: string;
@@ -57,46 +61,21 @@ interface Trend {
 interface ViralContent {
   virality_score: number;
   virality_reason: string;
-  platform_outputs: {
-    twitter_thread?: {
-      hook_tweet: string;
-      tweets: string[];
-      cta_tweet: string;
-    };
-    instagram_caption?: {
-      hook: string;
-      body: string;
-      cta: string;
-      hashtags: string;
-    };
-    tiktok_script?: {
-      hook_line: string;
-      script: string;
-      on_screen_text: string[];
-      trending_audio_suggestion: string;
-    };
-    linkedin_post?: {
-      opener: string;
-      body: string;
-      cta: string;
-    };
-    youtube_shorts_script?: {
-      hook: string;
-      script: string;
-      title: string;
-      description: string;
-    };
+  posts: {
+    twitter: { hook: string; body: string; cta: string; hashtags: string[] };
+    linkedin: { hook: string; body: string; cta: string };
+    instagram: { hook: string; body: string; cta: string; hashtags: string[] };
+    facebook: { hook: string; body: string; cta: string };
+    telegram: { hook: string; body: string; cta: string };
   };
-  content_metadata: {
-    hooks_ab_test: string[];
-    best_posting_times: {
-      twitter: string;
-      instagram: string;
-      tiktok: string;
-      linkedin: string;
-    };
-    repurpose_tip: string;
+  video_script: {
+    hook_3sec: string;
+    body_30sec: string;
+    cta_5sec: string;
+    b_roll_suggestions: string[];
   };
+  thumbnail_text: string;
+  best_posting_time: string;
 }
 
 export default function App() {
@@ -108,7 +87,7 @@ export default function App() {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>('Twitter');
   const [generatedContent, setGeneratedContent] = useState<ViralContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'scout' | 'write' | 'video' | 'image' | 'preview' | 'settings' | 'trends'>('scout');
+  const [activeTab, setActiveTab] = useState<'scout' | 'write' | 'repurpose' | 'video' | 'image' | 'preview' | 'settings' | 'trends'>('scout');
   const [isPublished, setIsPublished] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,6 +120,7 @@ export default function App() {
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
   const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoDuration, setVideoDuration] = useState<5 | 12 | 30>(5);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [videoMode, setVideoMode] = useState<'premium' | 'free'>('free');
   const [freeVideoAssets, setFreeVideoAssets] = useState<{
@@ -149,14 +129,21 @@ export default function App() {
     on_screen_captions: { time: string; text: string }[];
     thumbnail_concept: string;
   } | null>(null);
-  const [isPlayingFreeVideo, setIsPlayingFreeVideo] = useState(false);
-  const [currentCaption, setCurrentCaption] = useState('');
 
   // Image Generation State (Free)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = useState('');
   const [imageAspectRatio, setImageAspectRatio] = useState<'1:1' | '16:9' | '9:16'>('1:1');
+
+  // Repurpose State
+  const [sourceText, setSourceText] = useState('');
+  const [isRepurposing, setIsRepurposing] = useState(false);
+  const [repurposedPosts, setRepurposedPosts] = useState<{platform: string, topic: string, content: string}[]>([]);
+
+  // Voice Trainer State
+  const [voiceSamples, setVoiceSamples] = useState('');
+  const [isTrainingVoice, setIsTrainingVoice] = useState(false);
 
   useEffect(() => {
     const checkApiKey = async () => {
@@ -181,7 +168,7 @@ export default function App() {
     setError(null);
     try {
       if (videoMode === 'premium') {
-        const videoUrl = await generateVideo(videoPrompt);
+        const videoUrl = await generateVideo(videoPrompt, '9:16', videoDuration);
         setGeneratedVideoUrl(videoUrl);
       } else {
         const assets = await generateFreeVideoAssets(videoPrompt);
@@ -201,34 +188,6 @@ export default function App() {
     }
   };
 
-  const handlePlayFreeVideo = () => {
-    if (!freeVideoAssets) return;
-    
-    setIsPlayingFreeVideo(true);
-    const utterance = new SpeechSynthesisUtterance(freeVideoAssets.voiceover_script);
-    utterance.rate = 1.1; // Slightly faster for viral feel
-    
-    // Simple caption sync based on time
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      const elapsed = (Date.now() - startTime) / 1000;
-      const caption = freeVideoAssets.on_screen_captions.find(c => {
-        const [m, s] = c.time.split(':').map(Number);
-        const timeInSec = m * 60 + s;
-        return elapsed >= timeInSec && elapsed < timeInSec + 3;
-      });
-      if (caption) setCurrentCaption(caption.text);
-    }, 100);
-
-    utterance.onend = () => {
-      setIsPlayingFreeVideo(false);
-      setCurrentCaption('');
-      clearInterval(interval);
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
-
   const handleGenerateImage = async () => {
     if (!imagePrompt) return;
     setIsGeneratingImage(true);
@@ -241,6 +200,38 @@ export default function App() {
       setError("Failed to generate image. Please try again.");
     } finally {
       setIsGeneratingImage(false);
+    }
+  };
+
+  const handleRepurpose = async () => {
+    if (!sourceText) return;
+    setIsRepurposing(true);
+    setError(null);
+    try {
+      const result = await repurposeContent(sourceText);
+      setRepurposedPosts(result);
+    } catch (err: any) {
+      console.error("Failed to repurpose:", err);
+      setError("Failed to repurpose content. Please try again.");
+    } finally {
+      setIsRepurposing(false);
+    }
+  };
+
+  const handleTrainVoice = async () => {
+    if (!voiceSamples) return;
+    setIsTrainingVoice(true);
+    setError(null);
+    try {
+      const voice = await analyzeBrandVoice(voiceSamples);
+      setBrandVoice(voice);
+      setVoiceSamples('');
+      alert("Brand Voice successfully trained and updated!");
+    } catch (err: any) {
+      console.error("Failed to train voice:", err);
+      setError("Failed to analyze voice. Please try again.");
+    } finally {
+      setIsTrainingVoice(false);
     }
   };
 
@@ -300,24 +291,24 @@ export default function App() {
 
   const getPlatformContentString = () => {
     if (!generatedContent) return '';
-    const outputs = generatedContent.platform_outputs;
+    const posts = generatedContent.posts;
     
     switch (selectedPlatform) {
       case 'Twitter':
-        if (!outputs.twitter_thread) return '';
-        return [outputs.twitter_thread.hook_tweet, ...outputs.twitter_thread.tweets, outputs.twitter_thread.cta_tweet].join('\n\n');
+        if (!posts.twitter) return '';
+        return `${posts.twitter.hook}\n\n${posts.twitter.body}\n\n${posts.twitter.cta}\n\n${posts.twitter.hashtags.join(' ')}`;
       case 'Instagram':
-        if (!outputs.instagram_caption) return '';
-        return `${outputs.instagram_caption.hook}\n\n${outputs.instagram_caption.body}\n\n${outputs.instagram_caption.cta}\n\n${outputs.instagram_caption.hashtags}`;
+        if (!posts.instagram) return '';
+        return `${posts.instagram.hook}\n\n${posts.instagram.body}\n\n${posts.instagram.cta}\n\n${posts.instagram.hashtags.join(' ')}`;
       case 'LinkedIn':
-        if (!outputs.linkedin_post) return '';
-        return `${outputs.linkedin_post.opener}\n\n${outputs.linkedin_post.body}\n\n${outputs.linkedin_post.cta}`;
-      case 'TikTok':
-        if (!outputs.tiktok_script) return '';
-        return `Hook: ${outputs.tiktok_script.hook_line}\n\nScript: ${outputs.tiktok_script.script}\n\nOn Screen: ${outputs.tiktok_script.on_screen_text.join(', ')}\n\nAudio: ${outputs.tiktok_script.trending_audio_suggestion}`;
-      case 'YouTube':
-        if (!outputs.youtube_shorts_script) return '';
-        return `Title: ${outputs.youtube_shorts_script.title}\n\nHook: ${outputs.youtube_shorts_script.hook}\n\nScript: ${outputs.youtube_shorts_script.script}\n\nDescription: ${outputs.youtube_shorts_script.description}`;
+        if (!posts.linkedin) return '';
+        return `${posts.linkedin.hook}\n\n${posts.linkedin.body}\n\n${posts.linkedin.cta}`;
+      case 'Facebook':
+        if (!posts.facebook) return '';
+        return `${posts.facebook.hook}\n\n${posts.facebook.body}\n\n${posts.facebook.cta}`;
+      case 'Telegram':
+        if (!posts.telegram) return '';
+        return `${posts.telegram.hook}\n\n${posts.telegram.body}\n\n${posts.telegram.cta}`;
       default:
         return '';
     }
@@ -379,6 +370,7 @@ export default function App() {
             { id: 'scout', label: 'SCOUT', icon: TrendingUp },
             { id: 'trends', label: 'TRENDS', icon: Globe },
             { id: 'write', label: 'WRITE', icon: PenTool },
+            { id: 'repurpose', label: 'REPURPOSE', icon: Repeat },
             { id: 'image', label: 'IMAGE (FREE)', icon: ImageIcon },
             { id: 'video', label: 'VIDEO', icon: Video },
             { id: 'preview', label: 'PREVIEW', icon: Share2 },
@@ -439,8 +431,8 @@ export default function App() {
                         <option value="Twitter">Twitter</option>
                         <option value="LinkedIn">LinkedIn</option>
                         <option value="Instagram">Instagram</option>
-                        <option value="TikTok">TikTok</option>
                         <option value="Facebook">Facebook</option>
+                        <option value="Telegram">Telegram</option>
                       </select>
                     </div>
                     <div className="flex flex-col justify-end">
@@ -592,8 +584,8 @@ export default function App() {
 
                     <div className="space-y-3">
                       <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Platform</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        {(['Twitter', 'Instagram', 'LinkedIn', 'TikTok', 'YouTube'] as Platform[]).map((p) => (
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                        {(['Twitter', 'Instagram', 'LinkedIn', 'Facebook', 'Telegram'] as Platform[]).map((p) => (
                           <button
                             key={p}
                             onClick={() => setSelectedPlatform(p)}
@@ -679,34 +671,94 @@ export default function App() {
                               {getPlatformContentString()}
                             </ReactMarkdown>
                           </div>
-
-                          {/* Hook A/B Tester */}
-                          {generatedContent.content_metadata.hooks_ab_test && (
-                            <div className="space-y-4 lg:space-y-6">
-                              <div className="flex items-center gap-3">
-                                <Sparkles className="text-accent w-4 h-4 lg:w-[18px] lg:h-[18px]" />
-                                <h4 className="font-display text-lg lg:text-xl font-bold tracking-tight">Viral Hook A/B Tester</h4>
-                              </div>
-                              <div className="grid grid-cols-1 gap-3 lg:gap-4">
-                                {generatedContent.content_metadata.hooks_ab_test.map((hook, i) => (
-                                  <div key={i} className="glass-card p-4 lg:p-5 rounded-xl border-white/5 hover:border-accent/30 transition-all group flex items-center justify-between gap-4">
-                                    <p className="text-xs lg:text-sm text-muted group-hover:text-white transition-colors">"{hook}"</p>
-                                    <button 
-                                      onClick={() => navigator.clipboard.writeText(hook)}
-                                      className="text-[9px] font-mono tracking-widest text-accent font-bold opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all"
-                                    >
-                                      USE HOOK
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
                       ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted/20 text-center space-y-6">
                           <PenTool size={64} strokeWidth={1} />
                           <p className="font-mono text-[10px] tracking-[0.2em] uppercase">Ready for input</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.section>
+          )}
+
+          {activeTab === 'repurpose' && (
+            <motion.section
+              key="repurpose"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-12"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
+                <div className="space-y-6 lg:space-y-8">
+                  <div className="glass-card p-6 lg:p-8 rounded-2xl space-y-6 lg:space-y-8">
+                    <h3 className="font-display text-lg lg:text-xl font-bold tracking-tight flex items-center gap-3">
+                      <Repeat className="text-accent2" size={20} /> Content Repurposer
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Source Material</label>
+                      <textarea 
+                        value={sourceText}
+                        onChange={(e) => setSourceText(e.target.value)}
+                        placeholder="Paste a blog post, article, or video transcript here to generate a 3-post viral campaign..."
+                        className="w-full bg-white/5 border border-white/10 px-5 py-4 rounded-xl focus:outline-none focus:border-accent2 transition-all text-sm min-h-[200px] resize-none placeholder:text-muted/50"
+                      />
+                    </div>
+
+                    <button 
+                      onClick={handleRepurpose}
+                      disabled={isRepurposing || !sourceText}
+                      className="w-full flex items-center justify-center gap-3 bg-white hover:bg-white/90 text-black py-5 rounded-xl font-bold transition-all disabled:opacity-50 mt-6 shadow-xl shadow-white/5"
+                    >
+                      {isRepurposing ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />}
+                      <span className="tracking-widest text-[11px] uppercase">{isRepurposing ? 'ANALYZING...' : 'GENERATE CAMPAIGN'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2">
+                  <div className="glass-card rounded-2xl min-h-[400px] lg:min-h-[600px] flex flex-col overflow-hidden">
+                    <div className="border-b border-white/5 px-6 lg:px-8 py-4 lg:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/5 gap-4 sm:gap-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-accent2 shadow-[0_0_8px_rgba(236,72,153,0.5)]" />
+                        <span className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Generated Campaign</span>
+                      </div>
+                    </div>
+                    <div className="p-6 lg:p-10 flex-grow overflow-auto">
+                      {isRepurposing ? (
+                        <div className="h-full flex flex-col items-center justify-center text-muted space-y-6 py-12 lg:py-0">
+                          <Loader2 className="animate-spin text-accent2 w-8 h-8 lg:w-10 lg:h-10" />
+                          <p className="font-mono text-[10px] tracking-[0.3em] uppercase animate-pulse">Extracting Insights</p>
+                        </div>
+                      ) : repurposedPosts.length > 0 ? (
+                        <div className="space-y-8">
+                          {repurposedPosts.map((post, i) => (
+                            <div key={i} className="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                              <div className="flex justify-between items-center mb-4">
+                                <span className="text-[10px] font-mono uppercase tracking-widest text-accent2 bg-accent2/10 px-3 py-1 rounded-full">{post.platform}</span>
+                                <button 
+                                  onClick={() => navigator.clipboard.writeText(post.content)}
+                                  className="text-muted hover:text-white text-[10px] font-mono tracking-widest transition-colors"
+                                >
+                                  COPY
+                                </button>
+                              </div>
+                              <h4 className="font-bold text-lg mb-3">{post.topic}</h4>
+                              <div className="whitespace-pre-wrap text-sm text-muted/90 font-light leading-relaxed">
+                                {post.content}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="h-full flex flex-col items-center justify-center text-muted/20 text-center space-y-6">
+                          <Repeat size={64} strokeWidth={1} />
+                          <p className="font-mono text-[10px] tracking-[0.2em] uppercase">Paste content to repurpose</p>
                         </div>
                       )}
                     </div>
@@ -893,6 +945,21 @@ export default function App() {
                         />
                       </div>
 
+                      {videoMode === 'premium' && (
+                        <div className="space-y-4">
+                          <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Video Duration</label>
+                          <select 
+                            value={videoDuration}
+                            onChange={(e) => setVideoDuration(Number(e.target.value) as 5 | 12 | 30)}
+                            className="w-full bg-white/5 border border-white/10 px-5 py-4 rounded-xl focus:outline-none focus:border-accent3 transition-all text-sm appearance-none text-white cursor-pointer"
+                          >
+                            <option value={5}>5s (Standard)</option>
+                            <option value={12}>12s (Extended)</option>
+                            <option value={30}>30s (Viral Length)</option>
+                          </select>
+                        </div>
+                      )}
+
                       <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
                         <div className="flex items-center gap-3 mb-3">
                           <Sparkles className="text-accent2" size={16} />
@@ -944,46 +1011,7 @@ export default function App() {
                           </div>
                         </div>
                       ) : videoMode === 'free' && freeVideoAssets ? (
-                        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 lg:p-10 text-center space-y-6 lg:space-y-8">
-                          <div className="absolute inset-0 bg-gradient-to-b from-accent3/20 to-black/60" />
-                          
-                          {/* Visual Placeholder for B-Roll */}
-                          <div className="relative z-10 w-full aspect-square rounded-xl lg:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
-                            <ImageIcon className="text-white/20 animate-pulse w-8 h-8 lg:w-12 lg:h-12" />
-                            <div className="absolute bottom-3 lg:bottom-4 left-3 lg:left-4 right-3 lg:right-4 text-[7px] lg:text-[8px] font-mono text-muted uppercase tracking-widest">
-                              B-Roll Idea: {freeVideoAssets.b_roll_search_terms[0]}
-                            </div>
-                          </div>
-
-                          {/* Captions */}
-                          <AnimatePresence mode="wait">
-                            {isPlayingFreeVideo && currentCaption && (
-                              <motion.div 
-                                key={currentCaption}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 1.1 }}
-                                className="relative z-20 bg-white text-black font-black text-xl lg:text-2xl py-2 lg:py-3 px-4 lg:px-6 transform -rotate-1 shadow-2xl"
-                              >
-                                {currentCaption}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-
-                          {!isPlayingFreeVideo && (
-                            <button 
-                              onClick={handlePlayFreeVideo}
-                              className="relative z-20 w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
-                            >
-                              <Play className="w-6 h-6 lg:w-8 lg:h-8" fill="currentColor" />
-                            </button>
-                          )}
-
-                          <div className="relative z-10 space-y-2">
-                            <p className="text-sm text-white font-bold tracking-tight">Free Video Preview</p>
-                            <p className="text-xs text-muted font-light">Click play to hear the viral voiceover</p>
-                          </div>
-                        </div>
+                        <FreeVideoPlayer assets={freeVideoAssets} />
                       ) : generatedVideoUrl ? (
                         <video 
                           src={generatedVideoUrl} 
@@ -1059,7 +1087,7 @@ export default function App() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
                 {/* Mockup */}
                 <div className="flex justify-center items-start overflow-hidden">
-                  {selectedPlatform === 'Twitter' && generatedContent?.platform_outputs.twitter_thread && (
+                  {selectedPlatform === 'Twitter' && generatedContent?.posts.twitter && (
                     <div className="w-full max-w-md bg-white text-black p-5 lg:p-8 rounded-2xl lg:rounded-3xl shadow-2xl">
                       <div className="flex gap-3 lg:gap-4 mb-4 lg:mb-6">
                         <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-gray-100 border border-gray-200" />
@@ -1069,10 +1097,10 @@ export default function App() {
                         </div>
                       </div>
                       <div className="text-sm lg:text-lg leading-relaxed mb-4 lg:mb-6 whitespace-pre-wrap font-light">
-                        {generatedContent.platform_outputs.twitter_thread.hook_tweet}
+                        {generatedContent.posts.twitter.hook}
                       </div>
                       <div className="text-blue-500 mb-4 lg:mb-6 font-medium text-xs lg:text-base">
-                        {generatedContent.platform_outputs.twitter_thread.tweets[0].substring(0, 100)}...
+                        {generatedContent.posts.twitter.body.substring(0, 100)}...
                       </div>
                       <div className="flex justify-between text-gray-400 border-t border-gray-100 pt-4 lg:pt-6">
                         <Share2 className="w-4 h-4 lg:w-[18px] lg:h-[18px]" />
@@ -1083,7 +1111,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {selectedPlatform === 'Instagram' && generatedContent?.platform_outputs.instagram_caption && (
+                  {selectedPlatform === 'Instagram' && generatedContent?.posts.instagram && (
                     <div className="relative w-full max-w-[320px] aspect-[9/18] bg-black rounded-[2.5rem] md:rounded-[3.5rem] border-[8px] md:border-[12px] border-white/10 shadow-2xl overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80" />
                       <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 space-y-4 md:space-y-5">
@@ -1092,7 +1120,7 @@ export default function App() {
                           <div className="font-bold text-white text-xs md:text-sm">@viralflow_ai</div>
                         </div>
                         <p className="text-white text-xs md:text-sm line-clamp-4 leading-relaxed font-light">
-                          <span className="font-bold text-accent2">{generatedContent.platform_outputs.instagram_caption.hook}</span> {generatedContent.platform_outputs.instagram_caption.body}
+                          <span className="font-bold text-accent2">{generatedContent.posts.instagram.hook}</span> {generatedContent.posts.instagram.body}
                         </p>
                         <div className="flex items-center gap-2 text-white/70 text-[9px] md:text-[10px] font-mono tracking-wider">
                           <Sparkles className="w-2.5 h-2.5" /> Original Audio - ViralFlow AI
@@ -1106,7 +1134,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {selectedPlatform === 'LinkedIn' && generatedContent?.platform_outputs.linkedin_post && (
+                  {selectedPlatform === 'LinkedIn' && generatedContent?.posts.linkedin && (
                     <div className="w-full max-w-xl bg-white text-black p-6 md:p-10 rounded-xl md:rounded-2xl shadow-2xl border border-gray-100">
                       <div className="flex gap-4 md:gap-5 mb-6 md:mb-8">
                         <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg md:rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-2xl md:text-3xl">V</div>
@@ -1117,9 +1145,9 @@ export default function App() {
                         </div>
                       </div>
                       <div className="text-sm md:text-base leading-relaxed mb-6 md:mb-8 whitespace-pre-wrap font-light text-gray-800">
-                        <p className="font-bold text-black mb-2 md:mb-3 text-base md:text-lg">{generatedContent.platform_outputs.linkedin_post.opener}</p>
-                        {generatedContent.platform_outputs.linkedin_post.body}
-                        <p className="font-bold text-blue-600 mt-4 md:mt-6 text-base md:text-lg">{generatedContent.platform_outputs.linkedin_post.cta}</p>
+                        <p className="font-bold text-black mb-2 md:mb-3 text-base md:text-lg">{generatedContent.posts.linkedin.hook}</p>
+                        {generatedContent.posts.linkedin.body}
+                        <p className="font-bold text-blue-600 mt-4 md:mt-6 text-base md:text-lg">{generatedContent.posts.linkedin.cta}</p>
                       </div>
                       <div className="flex flex-wrap gap-4 md:gap-8 text-gray-400 font-bold text-xs md:text-sm border-t border-gray-100 pt-4 md:pt-6">
                         <span className="hover:text-blue-600 cursor-pointer transition-colors">Like</span>
@@ -1130,24 +1158,45 @@ export default function App() {
                     </div>
                   )}
 
-                  {selectedPlatform === 'TikTok' && generatedContent?.platform_outputs.tiktok_script && (
-                    <div className="relative w-full max-w-[320px] aspect-[9/18] bg-black rounded-[2.5rem] md:rounded-[3.5rem] border-[8px] md:border-[12px] border-white/10 shadow-2xl overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80" />
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full px-6">
-                        <div className="bg-white text-black font-black text-xl md:text-2xl py-2 md:py-3 px-4 md:px-6 inline-block transform -rotate-2 shadow-2xl">
-                          {generatedContent.platform_outputs.tiktok_script.on_screen_text[0]}
+                  {selectedPlatform === 'Facebook' && generatedContent?.posts.facebook && (
+                    <div className="w-full max-w-xl bg-white text-black p-6 md:p-10 rounded-xl md:rounded-2xl shadow-2xl border border-gray-100">
+                      <div className="flex gap-4 md:gap-5 mb-6 md:mb-8">
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-2xl md:text-3xl">V</div>
+                        <div>
+                          <div className="font-bold text-lg md:text-xl">ViralFlow AI</div>
+                          <div className="text-gray-500 text-xs md:text-sm">1m · 🌎</div>
                         </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 space-y-4 md:space-y-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 border border-white/40 backdrop-blur-md" />
-                          <div className="font-bold text-white text-xs md:text-sm">@viralflow_ai</div>
+                      <div className="text-sm md:text-base leading-relaxed mb-6 md:mb-8 whitespace-pre-wrap font-light text-gray-800">
+                        <p className="font-bold text-black mb-2 md:mb-3 text-base md:text-lg">{generatedContent.posts.facebook.hook}</p>
+                        {generatedContent.posts.facebook.body}
+                        <p className="font-bold text-blue-600 mt-4 md:mt-6 text-base md:text-lg">{generatedContent.posts.facebook.cta}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-4 md:gap-8 text-gray-400 font-bold text-xs md:text-sm border-t border-gray-100 pt-4 md:pt-6">
+                        <span className="hover:text-blue-600 cursor-pointer transition-colors">Like</span>
+                        <span className="hover:text-blue-600 cursor-pointer transition-colors">Comment</span>
+                        <span className="hover:text-blue-600 cursor-pointer transition-colors">Share</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedPlatform === 'Telegram' && generatedContent?.posts.telegram && (
+                    <div className="w-full max-w-md bg-[#1c242f] text-white p-4 md:p-6 rounded-2xl shadow-2xl border border-white/5 relative">
+                      <div className="absolute top-0 left-0 right-0 h-14 bg-[#232e3c] rounded-t-2xl flex items-center px-4 gap-3 border-b border-white/5">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">VF</div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm">ViralFlow Insider</span>
+                          <span className="text-[10px] text-blue-400">12.4K subscribers</span>
                         </div>
-                        <p className="text-white text-xs md:text-sm line-clamp-4 leading-relaxed font-light">
-                          {generatedContent.platform_outputs.tiktok_script.hook_line} #viral #ai
-                        </p>
-                        <div className="flex items-center gap-2 text-white/70 text-[9px] md:text-[10px] font-mono tracking-wider">
-                          <Sparkles size={10} /> {generatedContent.platform_outputs.tiktok_script.trending_audio_suggestion}
+                      </div>
+                      <div className="mt-14 bg-[#2b5278] rounded-xl p-4 md:p-5 relative">
+                        <div className="text-sm md:text-base leading-relaxed whitespace-pre-wrap font-light">
+                          <p className="font-bold mb-3 text-base">{generatedContent.posts.telegram.hook}</p>
+                          {generatedContent.posts.telegram.body}
+                          <p className="font-bold mt-4 text-blue-300">{generatedContent.posts.telegram.cta}</p>
+                        </div>
+                        <div className="absolute bottom-1 right-2 text-[10px] text-white/50 flex items-center gap-1">
+                          10:42 AM <span className="text-blue-400">✓✓</span>
                         </div>
                       </div>
                     </div>
@@ -1205,7 +1254,7 @@ export default function App() {
                       <h4 className="font-bold text-xs lg:text-sm tracking-widest uppercase">AI Optimization Tip</h4>
                     </div>
                     <p className="text-muted text-sm lg:text-base leading-relaxed font-light">
-                      {generatedContent?.content_metadata.repurpose_tip || `Based on current ${selectedPlatform} algorithm data, adding a question at the end of this post could increase engagement by up to 24%.`}
+                      Based on current {selectedPlatform} algorithm data, adding a question at the end of this post could increase engagement by up to 24%.
                     </p>
                   </div>
 
@@ -1216,7 +1265,7 @@ export default function App() {
                       </div>
                       <div>
                         <div className="text-xl lg:text-2xl font-bold tracking-tight">
-                          {generatedContent?.content_metadata.best_posting_times[selectedPlatform.toLowerCase() as keyof typeof generatedContent.content_metadata.best_posting_times] || '09:45 AM'}
+                          {generatedContent?.best_posting_time || '09:45 AM'}
                         </div>
                         <div className="text-[8px] lg:text-[9px] text-muted uppercase tracking-[0.2em] font-mono">Best Posting Time</div>
                       </div>
@@ -1245,11 +1294,10 @@ export default function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                       <div className="space-y-3">
                         <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Brand Voice</label>
-                        <input 
-                          type="text" 
+                        <textarea 
                           value={brandVoice}
                           onChange={(e) => setBrandVoice(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 px-5 py-4 rounded-xl focus:outline-none focus:border-accent2 transition-all text-sm"
+                          className="w-full bg-white/5 border border-white/10 px-5 py-4 rounded-xl focus:outline-none focus:border-accent2 transition-all text-sm min-h-[100px] resize-none"
                         />
                       </div>
                       <div className="space-y-3">
@@ -1260,6 +1308,29 @@ export default function App() {
                           onChange={(e) => setTargetAudience(e.target.value)}
                           className="w-full bg-white/5 border border-white/10 px-5 py-4 rounded-xl focus:outline-none focus:border-accent2 transition-all text-sm"
                         />
+                      </div>
+                    </div>
+
+                    <div className="pt-8 lg:pt-10 border-t border-white/5 space-y-6">
+                      <h4 className="font-display text-lg font-bold flex items-center gap-3 tracking-tight">
+                        <MessageSquare className="text-accent w-5 h-5" /> Personal Brand Voice Trainer
+                      </h4>
+                      <p className="text-xs text-muted font-light">Paste 3-5 of your best performing posts below. AI will analyze them and update your Brand Voice profile to sound exactly like you.</p>
+                      <div className="space-y-4">
+                        <textarea 
+                          value={voiceSamples}
+                          onChange={(e) => setVoiceSamples(e.target.value)}
+                          placeholder="Paste your past posts here..."
+                          className="w-full bg-white/5 border border-white/10 px-5 py-4 rounded-xl focus:outline-none focus:border-accent transition-all text-sm min-h-[120px] resize-none"
+                        />
+                        <button 
+                          onClick={handleTrainVoice}
+                          disabled={isTrainingVoice || !voiceSamples}
+                          className="flex items-center justify-center gap-2 bg-accent/20 hover:bg-accent/30 text-accent border border-accent/30 px-6 py-3 rounded-xl font-bold transition-all disabled:opacity-50 text-[10px] tracking-widest uppercase"
+                        >
+                          {isTrainingVoice ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                          {isTrainingVoice ? 'ANALYZING VOICE...' : 'TRAIN BRAND VOICE'}
+                        </button>
                       </div>
                     </div>
 
@@ -1378,8 +1449,9 @@ export default function App() {
                     <div className="space-y-4 lg:space-y-5">
                       {[
                         { name: 'Buffer', status: 'Connected', color: 'text-green-400' },
-                        { name: 'TikTok Developer', status: 'Pending', color: 'text-yellow-400' },
-                        { name: 'YouTube Data API', status: 'Connected', color: 'text-green-400' },
+                        { name: 'Facebook Graph API', status: 'Pending', color: 'text-yellow-400' },
+                        { name: 'LinkedIn Marketing API', status: 'Connected', color: 'text-green-400' },
+                        { name: 'Telegram Bot API', status: 'Connected', color: 'text-green-400' },
                         { name: 'X (Twitter) API', status: 'Not Configured', color: 'text-muted' }
                       ].map((channel) => (
                         <div key={channel.name} className="flex items-center justify-between p-4 lg:p-5 bg-white/5 border border-white/10 rounded-xl lg:rounded-2xl">
