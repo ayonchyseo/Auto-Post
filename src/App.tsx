@@ -27,6 +27,7 @@ import {
   Clock,
   Calendar,
   X,
+  Youtube,
   Play,
   Download,
   AlertCircle,
@@ -50,7 +51,7 @@ declare global {
   }
 }
 
-type Platform = 'Twitter' | 'Instagram' | 'LinkedIn' | 'Facebook' | 'Telegram';
+type Platform = 'Twitter' | 'Instagram' | 'LinkedIn' | 'Facebook' | 'Telegram' | 'YouTube';
 
 interface Trend {
   topic: string;
@@ -155,9 +156,14 @@ export default function App() {
     twitterAccessSecret: '',
     linkedinAccessToken: '',
     linkedinAuthorUrn: '',
+    youtubeAccessToken: '',
+    youtubeChannelId: '',
     pexelsApiKey: '',
     elevenLabsApiKey: ''
   });
+
+  const [validationStatus, setValidationStatus] = useState<Record<string, { status: 'idle' | 'validating' | 'valid' | 'invalid', message?: string }>>({});
+  const [isValidating, setIsValidating] = useState(false);
 
   useEffect(() => {
     const savedKeys = localStorage.getItem('viralflow_api_keys');
@@ -170,11 +176,114 @@ export default function App() {
 
   const updateApiKey = (key: keyof typeof apiKeys, value: string) => {
     setApiKeys(prev => ({ ...prev, [key]: value }));
+    // Reset validation status when key changes
+    if (validationStatus[key]) {
+      setValidationStatus(prev => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
   };
 
-  const saveApiKeys = () => {
+  const validateKeys = async () => {
+    setIsValidating(true);
+    const newStatus: typeof validationStatus = {};
+
+    // 1. Telegram Validation
+    if (apiKeys.telegramBotToken) {
+      newStatus.telegramBotToken = { status: 'validating' };
+      setValidationStatus({ ...newStatus });
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${apiKeys.telegramBotToken}/getMe`);
+        const data = await res.json();
+        newStatus.telegramBotToken = data.ok 
+          ? { status: 'valid' } 
+          : { status: 'invalid', message: 'Invalid Bot Token' };
+      } catch (e) {
+        newStatus.telegramBotToken = { status: 'invalid', message: 'Connection Error' };
+      }
+    }
+
+    // 2. LinkedIn Validation
+    if (apiKeys.linkedinAccessToken) {
+      newStatus.linkedinAccessToken = { status: 'validating' };
+      setValidationStatus({ ...newStatus });
+      try {
+        const res = await fetch('https://api.linkedin.com/v2/me', {
+          headers: { 'Authorization': `Bearer ${apiKeys.linkedinAccessToken}` }
+        });
+        const data = await res.json();
+        newStatus.linkedinAccessToken = res.ok 
+          ? { status: 'valid' } 
+          : { status: 'invalid', message: data.message || 'Invalid Token' };
+      } catch (e) {
+        newStatus.linkedinAccessToken = { status: 'invalid', message: 'Connection Error' };
+      }
+    }
+
+    // 3. YouTube Validation
+    if (apiKeys.youtubeAccessToken) {
+      newStatus.youtubeAccessToken = { status: 'validating' };
+      setValidationStatus({ ...newStatus });
+      try {
+        const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
+          headers: { 'Authorization': `Bearer ${apiKeys.youtubeAccessToken}` }
+        });
+        const data = await res.json();
+        newStatus.youtubeAccessToken = res.ok 
+          ? { status: 'valid' } 
+          : { status: 'invalid', message: data.error?.message || 'Invalid Token' };
+      } catch (e) {
+        newStatus.youtubeAccessToken = { status: 'invalid', message: 'Connection Error' };
+      }
+    }
+
+    // 4. Pexels Validation
+    if (apiKeys.pexelsApiKey) {
+      newStatus.pexelsApiKey = { status: 'validating' };
+      setValidationStatus({ ...newStatus });
+      try {
+        const res = await fetch('https://api.pexels.com/v1/curated?per_page=1', {
+          headers: { 'Authorization': apiKeys.pexelsApiKey }
+        });
+        newStatus.pexelsApiKey = res.ok 
+          ? { status: 'valid' } 
+          : { status: 'invalid', message: 'Invalid API Key' };
+      } catch (e) {
+        newStatus.pexelsApiKey = { status: 'invalid', message: 'Connection Error' };
+      }
+    }
+
+    // 5. ElevenLabs Validation
+    if (apiKeys.elevenLabsApiKey) {
+      newStatus.elevenLabsApiKey = { status: 'validating' };
+      setValidationStatus({ ...newStatus });
+      try {
+        const res = await fetch('https://api.elevenlabs.io/v1/user', {
+          headers: { 'xi-api-key': apiKeys.elevenLabsApiKey }
+        });
+        newStatus.elevenLabsApiKey = res.ok 
+          ? { status: 'valid' } 
+          : { status: 'invalid', message: 'Invalid API Key' };
+      } catch (e) {
+        newStatus.elevenLabsApiKey = { status: 'invalid', message: 'Connection Error' };
+      }
+    }
+
+    setValidationStatus(newStatus);
+    setIsValidating(false);
+    return Object.values(newStatus).every(s => s.status === 'valid');
+  };
+
+  const saveApiKeys = async () => {
+    const allValid = await validateKeys();
     localStorage.setItem('viralflow_api_keys', JSON.stringify(apiKeys));
-    alert("API Keys saved successfully!");
+    if (allValid) {
+      alert("API Keys validated and saved successfully!");
+    } else {
+      alert("API Keys saved, but some failed validation. Please check the errors.");
+    }
   };
 
   useEffect(() => {
@@ -434,6 +543,44 @@ export default function App() {
         alert(`Successfully published to LinkedIn!`);
       } catch (err: any) {
         alert(`Failed to publish to LinkedIn: ${err.message}`);
+      }
+      setIsPublished(false);
+      return;
+    }
+
+    if (!isScheduling && selectedPlatform === 'YouTube') {
+      if (!apiKeys.youtubeAccessToken) {
+        alert("Please configure your YouTube Access Token in Settings.");
+        setIsPublished(false);
+        return;
+      }
+      try {
+        const text = getPlatformContentString();
+        const formData = new FormData();
+        formData.append('title', selectedTopic || "ViralFlow Video");
+        formData.append('description', text);
+        formData.append('accessToken', apiKeys.youtubeAccessToken);
+
+        if (generatedVideoUrl) {
+          const response = await fetch(generatedVideoUrl);
+          const blob = await response.blob();
+          formData.append('video', blob, 'video.mp4');
+        } else {
+          alert("No video generated yet. Please generate a video first.");
+          setIsPublished(false);
+          return;
+        }
+
+        const res = await fetch('/api/youtube/publish', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "YouTube API Error");
+        alert(`Successfully published to YouTube!`);
+      } catch (err: any) {
+        alert(`Failed to publish to YouTube: ${err.message}`);
       }
       setIsPublished(false);
       return;
@@ -1568,16 +1715,33 @@ export default function App() {
                     
                     <div className="space-y-6">
                       <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Send className="text-[#0088cc] w-5 h-5" />
-                          <h4 className="font-bold text-sm">Telegram</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <Send className="text-[#0088cc] w-5 h-5" />
+                            <h4 className="font-bold text-sm">Telegram</h4>
+                          </div>
+                          {validationStatus.telegramBotToken && (
+                            <span className={cn(
+                              "text-[10px] font-mono px-2 py-0.5 rounded-full",
+                              validationStatus.telegramBotToken.status === 'valid' ? "bg-green-500/20 text-green-400" :
+                              validationStatus.telegramBotToken.status === 'invalid' ? "bg-red-500/20 text-red-400" :
+                              "bg-blue-500/20 text-blue-400 animate-pulse"
+                            )}>
+                              {validationStatus.telegramBotToken.status === 'validating' ? 'VALIDATING...' : 
+                               validationStatus.telegramBotToken.status === 'valid' ? 'VALID' : 
+                               validationStatus.telegramBotToken.message || 'INVALID'}
+                            </span>
+                          )}
                         </div>
                         <input 
                           type="password" 
                           placeholder="Bot Token (e.g., 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)" 
                           value={apiKeys.telegramBotToken}
                           onChange={(e) => updateApiKey('telegramBotToken', e.target.value)}
-                          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          className={cn(
+                            "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
+                            validationStatus.telegramBotToken?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
+                          )}
                         />
                         <input 
                           type="text" 
@@ -1589,14 +1753,31 @@ export default function App() {
                       </div>
 
                       <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 3.827H5.078z"/></svg>
-                          <h4 className="font-bold text-sm">X (Twitter)</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 3.827H5.078z"/></svg>
+                            <h4 className="font-bold text-sm">X (Twitter)</h4>
+                          </div>
+                          {validationStatus.twitterApiKey && (
+                            <span className={cn(
+                              "text-[10px] font-mono px-2 py-0.5 rounded-full",
+                              validationStatus.twitterApiKey.status === 'valid' ? "bg-green-500/20 text-green-400" :
+                              validationStatus.twitterApiKey.status === 'invalid' ? "bg-red-500/20 text-red-400" :
+                              "bg-blue-500/20 text-blue-400 animate-pulse"
+                            )}>
+                              {validationStatus.twitterApiKey.status === 'validating' ? 'VALIDATING...' : 
+                               validationStatus.twitterApiKey.status === 'valid' ? 'VALID' : 
+                               validationStatus.twitterApiKey.message || 'INVALID'}
+                            </span>
+                          )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <input 
                             type="password" placeholder="API Key" value={apiKeys.twitterApiKey} onChange={(e) => updateApiKey('twitterApiKey', e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                            className={cn(
+                              "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
+                              validationStatus.twitterApiKey?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
+                            )}
                           />
                           <input 
                             type="password" placeholder="API Secret" value={apiKeys.twitterApiSecret} onChange={(e) => updateApiKey('twitterApiSecret', e.target.value)}
@@ -1614,14 +1795,31 @@ export default function App() {
                       </div>
 
                       <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <svg className="w-5 h-5 fill-[#0a66c2]" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                          <h4 className="font-bold text-sm">LinkedIn</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <svg className="w-5 h-5 fill-[#0a66c2]" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                            <h4 className="font-bold text-sm">LinkedIn</h4>
+                          </div>
+                          {validationStatus.linkedinAccessToken && (
+                            <span className={cn(
+                              "text-[10px] font-mono px-2 py-0.5 rounded-full",
+                              validationStatus.linkedinAccessToken.status === 'valid' ? "bg-green-500/20 text-green-400" :
+                              validationStatus.linkedinAccessToken.status === 'invalid' ? "bg-red-500/20 text-red-400" :
+                              "bg-blue-500/20 text-blue-400 animate-pulse"
+                            )}>
+                              {validationStatus.linkedinAccessToken.status === 'validating' ? 'VALIDATING...' : 
+                               validationStatus.linkedinAccessToken.status === 'valid' ? 'VALID' : 
+                               validationStatus.linkedinAccessToken.message || 'INVALID'}
+                            </span>
+                          )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <input 
                             type="password" placeholder="Access Token" value={apiKeys.linkedinAccessToken} onChange={(e) => updateApiKey('linkedinAccessToken', e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                            className={cn(
+                              "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
+                              validationStatus.linkedinAccessToken?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
+                            )}
                           />
                           <input 
                             type="text" placeholder="Author URN (e.g., urn:li:person:12345)" value={apiKeys.linkedinAuthorUrn} onChange={(e) => updateApiKey('linkedinAuthorUrn', e.target.value)}
@@ -1631,38 +1829,115 @@ export default function App() {
                       </div>
 
                       <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Video className="text-[#05a081] w-5 h-5" />
-                          <h4 className="font-bold text-sm">Pexels (Free Video B-Roll)</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <Youtube className="text-[#ff0000] w-5 h-5" />
+                            <h4 className="font-bold text-sm">YouTube</h4>
+                          </div>
+                          {validationStatus.youtubeAccessToken && (
+                            <span className={cn(
+                              "text-[10px] font-mono px-2 py-0.5 rounded-full",
+                              validationStatus.youtubeAccessToken.status === 'valid' ? "bg-green-500/20 text-green-400" :
+                              validationStatus.youtubeAccessToken.status === 'invalid' ? "bg-red-500/20 text-red-400" :
+                              "bg-blue-500/20 text-blue-400 animate-pulse"
+                            )}>
+                              {validationStatus.youtubeAccessToken.status === 'validating' ? 'VALIDATING...' : 
+                               validationStatus.youtubeAccessToken.status === 'valid' ? 'VALID' : 
+                               validationStatus.youtubeAccessToken.message || 'INVALID'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <input 
+                            type="password" placeholder="Access Token" value={apiKeys.youtubeAccessToken} onChange={(e) => updateApiKey('youtubeAccessToken', e.target.value)}
+                            className={cn(
+                              "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
+                              validationStatus.youtubeAccessToken?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
+                            )}
+                          />
+                          <input 
+                            type="text" placeholder="Channel ID (Optional)" value={apiKeys.youtubeChannelId} onChange={(e) => updateApiKey('youtubeChannelId', e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <Video className="text-[#05a081] w-5 h-5" />
+                            <h4 className="font-bold text-sm">Pexels (Free Video B-Roll)</h4>
+                          </div>
+                          {validationStatus.pexelsApiKey && (
+                            <span className={cn(
+                              "text-[10px] font-mono px-2 py-0.5 rounded-full",
+                              validationStatus.pexelsApiKey.status === 'valid' ? "bg-green-500/20 text-green-400" :
+                              validationStatus.pexelsApiKey.status === 'invalid' ? "bg-red-500/20 text-red-400" :
+                              "bg-blue-500/20 text-blue-400 animate-pulse"
+                            )}>
+                              {validationStatus.pexelsApiKey.status === 'validating' ? 'VALIDATING...' : 
+                               validationStatus.pexelsApiKey.status === 'valid' ? 'VALID' : 
+                               validationStatus.pexelsApiKey.message || 'INVALID'}
+                            </span>
+                          )}
                         </div>
                         <input 
                           type="password" 
                           placeholder="Pexels API Key" 
                           value={apiKeys.pexelsApiKey}
                           onChange={(e) => updateApiKey('pexelsApiKey', e.target.value)}
-                          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          className={cn(
+                            "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
+                            validationStatus.pexelsApiKey?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
+                          )}
                         />
                       </div>
                       
                       <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                          <MessageSquare className="text-white w-5 h-5" />
-                          <h4 className="font-bold text-sm">ElevenLabs (Premium Voice)</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <MessageSquare className="text-white w-5 h-5" />
+                            <h4 className="font-bold text-sm">ElevenLabs (Premium Voice)</h4>
+                          </div>
+                          {validationStatus.elevenLabsApiKey && (
+                            <span className={cn(
+                              "text-[10px] font-mono px-2 py-0.5 rounded-full",
+                              validationStatus.elevenLabsApiKey.status === 'valid' ? "bg-green-500/20 text-green-400" :
+                              validationStatus.elevenLabsApiKey.status === 'invalid' ? "bg-red-500/20 text-red-400" :
+                              "bg-blue-500/20 text-blue-400 animate-pulse"
+                            )}>
+                              {validationStatus.elevenLabsApiKey.status === 'validating' ? 'VALIDATING...' : 
+                               validationStatus.elevenLabsApiKey.status === 'valid' ? 'VALID' : 
+                               validationStatus.elevenLabsApiKey.message || 'INVALID'}
+                            </span>
+                          )}
                         </div>
                         <input 
                           type="password" 
                           placeholder="ElevenLabs API Key" 
                           value={apiKeys.elevenLabsApiKey}
                           onChange={(e) => updateApiKey('elevenLabsApiKey', e.target.value)}
-                          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          className={cn(
+                            "w-full bg-black/20 border px-4 py-3 rounded-xl text-xs focus:outline-none transition-all",
+                            validationStatus.elevenLabsApiKey?.status === 'invalid' ? "border-red-500/50" : "border-white/10 focus:border-accent3"
+                          )}
                         />
                       </div>
 
                       <button 
                         onClick={saveApiKeys}
-                        className="w-full bg-accent hover:bg-accent/90 text-white px-6 py-4 rounded-xl font-bold transition-all text-sm tracking-widest uppercase shadow-xl shadow-accent/20"
+                        disabled={isValidating}
+                        className={cn(
+                          "w-full text-white px-6 py-4 rounded-xl font-bold transition-all text-sm tracking-widest uppercase shadow-xl",
+                          isValidating ? "bg-accent/50 cursor-not-allowed" : "bg-accent hover:bg-accent/90 shadow-accent/20"
+                        )}
                       >
-                        Save Keys
+                        {isValidating ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Validating...
+                          </div>
+                        ) : "Save & Validate Keys"}
                       </button>
                     </div>
                   </div>

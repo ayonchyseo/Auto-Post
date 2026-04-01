@@ -2,12 +2,16 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { TwitterApi } from "twitter-api-v2";
+import multer from "multer";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
   // API routes FIRST
   app.get("/api/health", (req, res) => {
@@ -90,6 +94,65 @@ async function startServer() {
     } catch (error: any) {
       console.error("LinkedIn API Error:", error);
       res.status(500).json({ error: error.message || "Failed to publish to LinkedIn" });
+    }
+  });
+
+  app.post("/api/youtube/publish", upload.single('video'), async (req, res) => {
+    try {
+      const { title, description, accessToken } = req.body;
+      const videoFile = req.file;
+
+      if (!accessToken) {
+        return res.status(400).json({ error: "Missing YouTube Access Token" });
+      }
+
+      if (!videoFile) {
+        return res.status(400).json({ error: "Missing video file" });
+      }
+
+      // YouTube Data API v3 upload endpoint (multipart)
+      const metadata = {
+        snippet: {
+          title: title || "ViralFlow Video",
+          description: description || "",
+          categoryId: "22" // People & Blogs
+        },
+        status: {
+          privacyStatus: "public"
+        }
+      };
+
+      const boundary = '-------314159265358979323846';
+      const delimiter = "\r\n--" + boundary + "\r\n";
+      const close_delim = "\r\n--" + boundary + "--";
+
+      const body = Buffer.concat([
+        Buffer.from(delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata)),
+        Buffer.from(delimiter + 'Content-Type: video/mp4\r\n\r\n'),
+        videoFile.buffer,
+        Buffer.from(close_delim)
+      ]);
+
+      const response = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': `multipart/related; boundary=${boundary}`,
+          'Content-Length': body.length.toString()
+        },
+        body: body
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Failed to publish to YouTube");
+      }
+
+      res.json({ success: true, data });
+    } catch (error: any) {
+      console.error("YouTube API Error:", error);
+      res.status(500).json({ error: error.message || "Failed to publish to YouTube" });
     }
   });
 
