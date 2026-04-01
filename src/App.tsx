@@ -145,6 +145,34 @@ export default function App() {
   const [voiceSamples, setVoiceSamples] = useState('');
   const [isTrainingVoice, setIsTrainingVoice] = useState(false);
 
+  // API Keys State
+  const [apiKeys, setApiKeys] = useState({
+    telegramBotToken: '',
+    telegramChatId: '',
+    twitterApiKey: '',
+    twitterApiSecret: '',
+    twitterAccessToken: '',
+    twitterAccessSecret: '',
+    linkedinAccessToken: '',
+    pexelsApiKey: '',
+    elevenLabsApiKey: ''
+  });
+
+  useEffect(() => {
+    const savedKeys = localStorage.getItem('viralflow_api_keys');
+    if (savedKeys) {
+      try {
+        setApiKeys(JSON.parse(savedKeys));
+      } catch (e) {}
+    }
+  }, []);
+
+  const updateApiKey = (key: keyof typeof apiKeys, value: string) => {
+    const newKeys = { ...apiKeys, [key]: value };
+    setApiKeys(newKeys);
+    localStorage.setItem('viralflow_api_keys', JSON.stringify(newKeys));
+  };
+
   useEffect(() => {
     const checkApiKey = async () => {
       if (window.aistudio) {
@@ -314,13 +342,34 @@ export default function App() {
     }
   };
 
-  const handlePublish = (isScheduling: boolean = false) => {
+  const handlePublish = async (isScheduling: boolean = false) => {
     if (isScheduling && !scheduleDate) {
       alert("Please select a date and time for scheduling.");
       return;
     }
 
     setIsPublished(true);
+
+    if (!isScheduling && selectedPlatform === 'Telegram' && apiKeys.telegramBotToken && apiKeys.telegramChatId) {
+      try {
+        const text = getPlatformContentString();
+        const res = await fetch(`https://api.telegram.org/bot${apiKeys.telegramBotToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: apiKeys.telegramChatId,
+            text: text
+          })
+        });
+        if (!res.ok) throw new Error("Telegram API Error");
+        alert(`Successfully published to Telegram!`);
+      } catch (err) {
+        alert("Failed to publish to Telegram. Check your Bot Token and Chat ID.");
+      }
+      setIsPublished(false);
+      return;
+    }
+
     setTimeout(() => {
       if (isScheduling) {
         const newScheduledPost = {
@@ -1011,7 +1060,7 @@ export default function App() {
                           </div>
                         </div>
                       ) : videoMode === 'free' && freeVideoAssets ? (
-                        <FreeVideoPlayer assets={freeVideoAssets} />
+                        <FreeVideoPlayer assets={freeVideoAssets} pexelsApiKey={apiKeys.pexelsApiKey} />
                       ) : generatedVideoUrl ? (
                         <video 
                           src={generatedVideoUrl} 
@@ -1444,28 +1493,84 @@ export default function App() {
                 <div className="space-y-8 lg:space-y-12">
                   <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl space-y-6 lg:space-y-8">
                     <h3 className="font-display text-xl lg:text-2xl font-extrabold flex items-center gap-4 tracking-tight">
-                      <Globe className="text-accent3 w-6 h-6 lg:w-7 lg:h-7" /> Publishing Channels
+                      <Globe className="text-accent3 w-6 h-6 lg:w-7 lg:h-7" /> Connections & API Keys
                     </h3>
-                    <div className="space-y-4 lg:space-y-5">
-                      {[
-                        { name: 'Buffer', status: 'Connected', color: 'text-green-400' },
-                        { name: 'Facebook Graph API', status: 'Pending', color: 'text-yellow-400' },
-                        { name: 'LinkedIn Marketing API', status: 'Connected', color: 'text-green-400' },
-                        { name: 'Telegram Bot API', status: 'Connected', color: 'text-green-400' },
-                        { name: 'X (Twitter) API', status: 'Not Configured', color: 'text-muted' }
-                      ].map((channel) => (
-                        <div key={channel.name} className="flex items-center justify-between p-4 lg:p-5 bg-white/5 border border-white/10 rounded-xl lg:rounded-2xl">
-                          <div className="space-y-1">
-                            <div className="text-xs lg:text-sm font-bold">{channel.name}</div>
-                            <div className={cn("text-[8px] lg:text-[9px] font-mono uppercase tracking-[0.2em]", channel.color)}>
-                              {channel.status}
-                            </div>
-                          </div>
-                          {channel.status !== 'Connected' && (
-                            <button className="text-[9px] lg:text-[10px] font-bold text-accent hover:underline tracking-widest uppercase">CONNECT</button>
-                          )}
+                    <p className="text-xs text-muted font-light">Configure your social accounts and media providers to enable direct publishing and premium asset generation.</p>
+                    
+                    <div className="space-y-6">
+                      <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Send className="text-[#0088cc] w-5 h-5" />
+                          <h4 className="font-bold text-sm">Telegram</h4>
                         </div>
-                      ))}
+                        <input 
+                          type="password" 
+                          placeholder="Bot Token (e.g., 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)" 
+                          value={apiKeys.telegramBotToken}
+                          onChange={(e) => updateApiKey('telegramBotToken', e.target.value)}
+                          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                        />
+                        <input 
+                          type="text" 
+                          placeholder="Chat ID (e.g., @mychannel or -1001234567890)" 
+                          value={apiKeys.telegramChatId}
+                          onChange={(e) => updateApiKey('telegramChatId', e.target.value)}
+                          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                        />
+                      </div>
+
+                      <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <svg className="w-5 h-5 fill-current text-white" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.008 3.827H5.078z"/></svg>
+                          <h4 className="font-bold text-sm">X (Twitter)</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <input 
+                            type="password" placeholder="API Key" value={apiKeys.twitterApiKey} onChange={(e) => updateApiKey('twitterApiKey', e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          />
+                          <input 
+                            type="password" placeholder="API Secret" value={apiKeys.twitterApiSecret} onChange={(e) => updateApiKey('twitterApiSecret', e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          />
+                          <input 
+                            type="password" placeholder="Access Token" value={apiKeys.twitterAccessToken} onChange={(e) => updateApiKey('twitterAccessToken', e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          />
+                          <input 
+                            type="password" placeholder="Access Secret" value={apiKeys.twitterAccessSecret} onChange={(e) => updateApiKey('twitterAccessSecret', e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Video className="text-[#05a081] w-5 h-5" />
+                          <h4 className="font-bold text-sm">Pexels (Free Video B-Roll)</h4>
+                        </div>
+                        <input 
+                          type="password" 
+                          placeholder="Pexels API Key" 
+                          value={apiKeys.pexelsApiKey}
+                          onChange={(e) => updateApiKey('pexelsApiKey', e.target.value)}
+                          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                        />
+                      </div>
+                      
+                      <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <MessageSquare className="text-white w-5 h-5" />
+                          <h4 className="font-bold text-sm">ElevenLabs (Premium Voice)</h4>
+                        </div>
+                        <input 
+                          type="password" 
+                          placeholder="ElevenLabs API Key" 
+                          value={apiKeys.elevenLabsApiKey}
+                          onChange={(e) => updateApiKey('elevenLabsApiKey', e.target.value)}
+                          className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                        />
+                      </div>
                     </div>
                   </div>
 

@@ -7,9 +7,10 @@ interface FreeVideoPlayerProps {
     b_roll_search_terms: string[];
     on_screen_captions: { time: string; text: string }[];
   };
+  pexelsApiKey?: string;
 }
 
-export function FreeVideoPlayer({ assets }: FreeVideoPlayerProps) {
+export function FreeVideoPlayer({ assets, pexelsApiKey }: FreeVideoPlayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -25,7 +26,7 @@ export function FreeVideoPlayer({ assets }: FreeVideoPlayerProps) {
     const fetchVideo = async () => {
       setIsLoading(true);
       try {
-        const apiKey = (import.meta as any).env.VITE_PEXELS_API_KEY;
+        const apiKey = pexelsApiKey || (import.meta as any).env.VITE_PEXELS_API_KEY;
         if (!apiKey) {
           console.warn("No Pexels API key found. Using placeholder video.");
           // Fallback to a generic placeholder video if no API key
