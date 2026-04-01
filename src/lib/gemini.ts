@@ -31,6 +31,7 @@ export async function generateViralContent(
       - CTA: Engagement bait (ask opinion, retweet prompt, or cliffhanger)
       - Format: Thread if complex, single tweet if punchy
       - Tone: Direct, slightly provocative, no fluff
+      - CRITICAL: The combined length of hook, body, cta, and hashtags MUST be under 280 characters.
 
       LINKEDIN:
       - Hook: Personal story opener OR shocking stat (2 lines)

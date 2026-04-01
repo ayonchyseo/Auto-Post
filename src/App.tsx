@@ -154,6 +154,7 @@ export default function App() {
     twitterAccessToken: '',
     twitterAccessSecret: '',
     linkedinAccessToken: '',
+    linkedinAuthorUrn: '',
     pexelsApiKey: '',
     elevenLabsApiKey: ''
   });
@@ -168,9 +169,12 @@ export default function App() {
   }, []);
 
   const updateApiKey = (key: keyof typeof apiKeys, value: string) => {
-    const newKeys = { ...apiKeys, [key]: value };
-    setApiKeys(newKeys);
-    localStorage.setItem('viralflow_api_keys', JSON.stringify(newKeys));
+    setApiKeys(prev => ({ ...prev, [key]: value }));
+  };
+
+  const saveApiKeys = () => {
+    localStorage.setItem('viralflow_api_keys', JSON.stringify(apiKeys));
+    alert("API Keys saved successfully!");
   };
 
   useEffect(() => {
@@ -350,7 +354,12 @@ export default function App() {
 
     setIsPublished(true);
 
-    if (!isScheduling && selectedPlatform === 'Telegram' && apiKeys.telegramBotToken && apiKeys.telegramChatId) {
+    if (!isScheduling && selectedPlatform === 'Telegram') {
+      if (!apiKeys.telegramBotToken || !apiKeys.telegramChatId) {
+        alert("Please configure your Telegram Bot Token and Chat ID in Settings.");
+        setIsPublished(false);
+        return;
+      }
       try {
         const text = getPlatformContentString();
         const res = await fetch(`https://api.telegram.org/bot${apiKeys.telegramBotToken}/sendMessage`, {
@@ -365,6 +374,66 @@ export default function App() {
         alert(`Successfully published to Telegram!`);
       } catch (err) {
         alert("Failed to publish to Telegram. Check your Bot Token and Chat ID.");
+      }
+      setIsPublished(false);
+      return;
+    }
+
+    if (!isScheduling && selectedPlatform === 'Twitter') {
+      if (!apiKeys.twitterApiKey || !apiKeys.twitterApiSecret || !apiKeys.twitterAccessToken || !apiKeys.twitterAccessSecret) {
+        alert("Please configure all Twitter API credentials in Settings.");
+        setIsPublished(false);
+        return;
+      }
+      try {
+        const text = getPlatformContentString();
+        const res = await fetch('/api/twitter/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            credentials: {
+              appKey: apiKeys.twitterApiKey,
+              appSecret: apiKeys.twitterApiSecret,
+              accessToken: apiKeys.twitterAccessToken,
+              accessSecret: apiKeys.twitterAccessSecret
+            }
+          })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Twitter API Error");
+        alert(`Successfully published to Twitter!`);
+      } catch (err: any) {
+        alert(`Failed to publish to Twitter: ${err.message}`);
+      }
+      setIsPublished(false);
+      return;
+    }
+
+    if (!isScheduling && selectedPlatform === 'LinkedIn') {
+      if (!apiKeys.linkedinAccessToken || !apiKeys.linkedinAuthorUrn) {
+        alert("Please configure your LinkedIn Access Token and Author URN in Settings.");
+        setIsPublished(false);
+        return;
+      }
+      try {
+        const text = getPlatformContentString();
+        const res = await fetch('/api/linkedin/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            accessToken: apiKeys.linkedinAccessToken,
+            authorUrn: apiKeys.linkedinAuthorUrn
+          })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "LinkedIn API Error");
+        alert(`Successfully published to LinkedIn!`);
+      } catch (err: any) {
+        alert(`Failed to publish to LinkedIn: ${err.message}`);
       }
       setIsPublished(false);
       return;
@@ -1546,6 +1615,23 @@ export default function App() {
 
                       <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
                         <div className="flex items-center gap-3 mb-2">
+                          <svg className="w-5 h-5 fill-[#0a66c2]" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                          <h4 className="font-bold text-sm">LinkedIn</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <input 
+                            type="password" placeholder="Access Token" value={apiKeys.linkedinAccessToken} onChange={(e) => updateApiKey('linkedinAccessToken', e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          />
+                          <input 
+                            type="text" placeholder="Author URN (e.g., urn:li:person:12345)" value={apiKeys.linkedinAuthorUrn} onChange={(e) => updateApiKey('linkedinAuthorUrn', e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 border border-white/10 p-5 rounded-2xl space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
                           <Video className="text-[#05a081] w-5 h-5" />
                           <h4 className="font-bold text-sm">Pexels (Free Video B-Roll)</h4>
                         </div>
@@ -1571,6 +1657,13 @@ export default function App() {
                           className="w-full bg-black/20 border border-white/10 px-4 py-3 rounded-xl text-xs focus:outline-none focus:border-accent3 transition-all"
                         />
                       </div>
+
+                      <button 
+                        onClick={saveApiKeys}
+                        className="w-full bg-accent hover:bg-accent/90 text-white px-6 py-4 rounded-xl font-bold transition-all text-sm tracking-widest uppercase shadow-xl shadow-accent/20"
+                      >
+                        Save Keys
+                      </button>
                     </div>
                   </div>
 
