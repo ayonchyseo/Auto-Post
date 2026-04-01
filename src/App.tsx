@@ -352,31 +352,32 @@ export default function App() {
   return (
     <div className="min-h-screen bg-bg text-text font-sans selection:bg-accent/30">
       {/* Hero Section */}
-      <header className="relative px-6 py-24 text-center overflow-hidden">
+      <header className="relative px-6 py-12 lg:py-24 text-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(124,58,237,0.15)_0%,transparent_50%)] pointer-events-none" />
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative z-10 max-w-3xl mx-auto"
         >
-          <div className="inline-block rounded-full border border-white/10 bg-white/5 px-4 py-1 mb-8 backdrop-blur-sm">
-            <span className="font-mono text-[10px] tracking-[0.3em] text-muted uppercase">Intelligence Layer v1.0</span>
+          <div className="inline-block rounded-full border border-white/10 bg-white/5 px-4 py-1 mb-4 lg:mb-8 backdrop-blur-sm">
+            <span className="font-mono text-[8px] lg:text-[10px] tracking-[0.3em] text-muted uppercase">Intelligence Layer v1.0</span>
           </div>
-          <h1 className="font-display text-5xl md:text-7xl font-extrabold leading-[1.1] tracking-tight mb-6 text-gradient">
+          <h1 className="font-display text-4xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight mb-4 lg:mb-6 text-gradient">
             ViralFlow AI
           </h1>
-          <p className="text-muted text-lg md:text-xl font-light leading-relaxed">
-            The minimal engine for maximum reach. <br className="hidden md:block" />
+          <p className="text-muted text-sm lg:text-xl font-light leading-relaxed">
+            The minimal engine for maximum reach. <br className="hidden lg:block" />
             Scout trends, craft stories, and automate your growth.
           </p>
         </motion.div>
       </header>
 
       {/* Navigation */}
-      <nav className="sticky top-6 z-50 px-6 mb-12">
-        <div className="mx-auto max-w-fit glass rounded-full px-2 py-1 flex gap-1 shadow-2xl shadow-black/50">
+      <nav className="sticky top-4 lg:top-6 z-50 px-4 lg:px-6 mb-6 lg:mb-12">
+        <div className="mx-auto max-w-fit glass rounded-full px-2 py-1 flex gap-1 shadow-2xl shadow-black/50 overflow-x-auto no-scrollbar max-w-full">
           {[
             { id: 'scout', label: 'SCOUT', icon: TrendingUp },
+            { id: 'trends', label: 'TRENDS', icon: Globe },
             { id: 'write', label: 'WRITE', icon: PenTool },
             { id: 'image', label: 'IMAGE (FREE)', icon: ImageIcon },
             { id: 'video', label: 'VIDEO', icon: Video },
@@ -387,7 +388,7 @@ export default function App() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "flex items-center gap-2 px-6 py-2.5 rounded-full transition-all font-mono text-[10px] tracking-widest whitespace-nowrap",
+                "flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-2.5 rounded-full transition-all font-mono text-[9px] lg:text-[10px] tracking-widest whitespace-nowrap",
                 activeTab === tab.id 
                   ? "bg-white text-black shadow-lg" 
                   : "text-muted hover:text-text hover:bg-white/5"
@@ -408,17 +409,17 @@ export default function App() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="space-y-8"
+              className="space-y-6 lg:space-y-8"
             >
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="flex-grow max-w-2xl space-y-4">
                   <div>
-                    <h2 className="font-display text-3xl font-extrabold mb-2">Trend Scout</h2>
-                    <p className="text-muted text-sm">Enter a seed topic and select a platform to discover viral angles.</p>
+                    <h2 className="font-display text-2xl lg:text-3xl font-extrabold mb-2 md:mb-3 tracking-tight">Trend Scout</h2>
+                    <p className="text-muted text-xs lg:text-sm font-light">Enter a seed topic and select a platform to discover viral angles.</p>
                   </div>
                   <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-grow flex flex-col gap-2">
-                      <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Seed Topic</label>
+                      <label className="font-mono text-[8px] lg:text-[9px] text-muted uppercase tracking-[0.2em]">Seed Topic</label>
                       <input 
                         type="text" 
                         value={seedTopic}
@@ -427,8 +428,8 @@ export default function App() {
                         className="w-full bg-white/5 border border-white/10 px-5 py-4 rounded-xl focus:outline-none focus:border-white/30 transition-all text-sm placeholder:text-muted/50"
                       />
                     </div>
-                    <div className="flex flex-col gap-2 min-w-[200px]">
-                      <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Platform</label>
+                    <div className="flex flex-col gap-2 min-w-[160px] lg:min-w-[200px]">
+                      <label className="font-mono text-[8px] lg:text-[9px] text-muted uppercase tracking-[0.2em]">Platform</label>
                       <select 
                         value={scoutPlatform}
                         onChange={(e) => setScoutPlatform(e.target.value)}
@@ -446,7 +447,7 @@ export default function App() {
                       <button 
                         onClick={fetchTrends}
                         disabled={isAnalyzing || !seedTopic}
-                        className="flex items-center justify-center gap-2 bg-white hover:bg-white/90 text-black px-10 py-4 rounded-xl font-bold transition-all disabled:opacity-50 h-[54px] shadow-xl shadow-white/5"
+                        className="flex items-center justify-center gap-2 bg-white hover:bg-white/90 text-black px-8 lg:px-10 py-4 rounded-xl font-bold transition-all disabled:opacity-50 h-[54px] shadow-xl shadow-white/5 text-[11px] tracking-widest uppercase"
                       >
                         {isAnalyzing ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
                         <span>SCOUT</span>
@@ -462,7 +463,7 @@ export default function App() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {trends.length > 0 ? (
                   trends.map((trend, i) => (
                     <motion.div
@@ -470,29 +471,29 @@ export default function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
-                      className="group glass-card p-8 rounded-2xl cursor-pointer"
+                      className="group glass-card p-6 lg:p-8 rounded-2xl cursor-pointer"
                       onClick={() => {
                         setSelectedTopic(trend.topic);
                         setActiveTab('write');
                       }}
                     >
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="bg-white/10 text-white font-mono text-[9px] tracking-widest px-3 py-1 rounded-full border border-white/5">
+                      <div className="flex items-center justify-between mb-4 lg:mb-6">
+                        <div className="bg-white/10 text-white font-mono text-[8px] lg:text-[9px] tracking-widest px-3 py-1 rounded-full border border-white/5">
                           SCORE: {trend.viral_score}/10
                         </div>
                         <Zap size={14} className="text-white opacity-0 group-hover:opacity-100 transition-all transform group-hover:scale-110" />
                       </div>
-                      <h3 className="font-display text-2xl font-bold mb-4 group-hover:text-white transition-colors leading-tight">{trend.topic}</h3>
-                      <p className="text-muted text-sm leading-relaxed mb-6 font-light">{trend.why_viral}</p>
-                      <div className="flex items-center text-white font-mono text-[10px] tracking-widest group-hover:gap-3 transition-all">
+                      <h3 className="font-display text-xl lg:text-2xl font-bold mb-3 lg:mb-4 group-hover:text-white transition-colors leading-tight">{trend.topic}</h3>
+                      <p className="text-muted text-xs lg:text-sm leading-relaxed mb-4 lg:mb-6 font-light">{trend.why_viral}</p>
+                      <div className="flex items-center text-white font-mono text-[9px] lg:text-[10px] tracking-widest group-hover:gap-3 transition-all">
                         GENERATE <ArrowRight size={12} />
                       </div>
                     </motion.div>
                   ))
                 ) : (
-                  <div className="col-span-3 py-20 text-center border border-dashed border-border rounded-sm">
-                    <TrendingUp size={48} className="mx-auto text-muted/20 mb-4" />
-                    <p className="text-muted">No trends analyzed yet. Click "Scout Trends" to begin.</p>
+                  <div className="col-span-1 md:col-span-2 lg:col-span-3 py-16 lg:py-20 text-center border border-dashed border-border rounded-2xl">
+                    <TrendingUp className="mx-auto text-muted/20 mb-4 w-10 h-10 lg:w-12 lg:h-12" />
+                    <p className="text-muted text-sm lg:text-base">No trends analyzed yet. Click "Scout Trends" to begin.</p>
                   </div>
                 )}
               </div>
@@ -505,20 +506,20 @@ export default function App() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="space-y-12"
+              className="space-y-6 lg:space-y-12"
             >
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                  <h2 className="font-display text-4xl font-extrabold mb-3 tracking-tight">Trend Scout</h2>
-                  <p className="text-muted text-base font-light">AI-powered global trend analysis for maximum virality.</p>
+                  <h2 className="font-display text-2xl lg:text-4xl font-extrabold mb-2 md:mb-3 tracking-tight">Trend Scout</h2>
+                  <p className="text-muted text-xs lg:text-base font-light">AI-powered global trend analysis for maximum virality.</p>
                 </div>
-                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-                  <button className="px-4 py-2 rounded-lg bg-white text-black text-[10px] font-mono tracking-widest uppercase">GLOBAL</button>
-                  <button className="px-4 py-2 rounded-lg text-muted hover:text-white text-[10px] font-mono tracking-widest uppercase">LOCAL</button>
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 self-start md:self-auto">
+                  <button className="px-4 py-2 rounded-lg bg-white text-black text-[9px] md:text-[10px] font-mono tracking-widest uppercase">GLOBAL</button>
+                  <button className="px-4 py-2 rounded-lg text-muted hover:text-white text-[9px] md:text-[10px] font-mono tracking-widest uppercase">LOCAL</button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                 {[
                   { topic: "AI Agents in SaaS", score: 98, trend: "Rising", category: "Tech", color: "text-accent" },
                   { topic: "Quiet Luxury Fashion", score: 84, trend: "Stable", category: "Lifestyle", color: "text-accent2" },
@@ -527,14 +528,14 @@ export default function App() {
                   { topic: "Biohacking Routines", score: 65, trend: "Rising", category: "Health", color: "text-accent2" },
                   { topic: "Web3 Gaming", score: 58, trend: "Falling", category: "Gaming", color: "text-muted" }
                 ].map((trend, i) => (
-                  <div key={i} className="glass-card p-8 rounded-3xl border-white/5 hover:border-white/20 transition-all group">
-                    <div className="flex justify-between items-start mb-6">
-                      <span className="text-[9px] font-mono uppercase tracking-widest text-muted bg-white/5 px-3 py-1 rounded-full">{trend.category}</span>
-                      <div className={cn("flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-widest", trend.color)}>
-                        <TrendingUp size={12} /> {trend.trend}
+                  <div key={i} className="glass-card p-6 lg:p-8 rounded-2xl lg:rounded-3xl border-white/5 hover:border-white/20 transition-all group">
+                    <div className="flex justify-between items-start mb-4 lg:mb-6">
+                      <span className="text-[8px] lg:text-[9px] font-mono uppercase tracking-widest text-muted bg-white/5 px-3 py-1 rounded-full">{trend.category}</span>
+                      <div className={cn("flex items-center gap-1.5 font-mono text-[9px] lg:text-[10px] font-bold uppercase tracking-widest", trend.color)}>
+                        <TrendingUp className="w-2.5 h-2.5 lg:w-3 lg:h-3" /> {trend.trend}
                       </div>
                     </div>
-                    <h4 className="text-xl font-bold mb-6 tracking-tight group-hover:text-accent transition-colors">{trend.topic}</h4>
+                    <h4 className="text-lg lg:text-xl font-bold mb-4 lg:mb-6 tracking-tight group-hover:text-accent transition-colors">{trend.topic}</h4>
                     <div className="space-y-3">
                       <div className="flex justify-between text-[9px] font-mono uppercase tracking-widest text-muted">
                         <span>Virality Potential</span>
@@ -572,11 +573,11 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-12"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-12">
                 {/* Controls */}
-                <div className="space-y-8">
-                  <div className="glass-card p-8 rounded-2xl space-y-8">
-                    <h3 className="font-display text-xl font-bold tracking-tight">Configuration</h3>
+                <div className="space-y-6 lg:space-y-8">
+                  <div className="glass-card p-6 lg:p-8 rounded-2xl space-y-6 lg:space-y-8">
+                    <h3 className="font-display text-lg lg:text-xl font-bold tracking-tight">Configuration</h3>
                     
                     <div className="space-y-3">
                       <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Topic</label>
@@ -622,13 +623,13 @@ export default function App() {
 
                 {/* Output */}
                 <div className="lg:col-span-2">
-                  <div className="glass-card rounded-2xl min-h-[600px] flex flex-col overflow-hidden">
-                    <div className="border-b border-white/5 px-8 py-6 flex items-center justify-between bg-white/5">
+                  <div className="glass-card rounded-2xl min-h-[400px] lg:min-h-[600px] flex flex-col overflow-hidden">
+                    <div className="border-b border-white/5 px-6 lg:px-8 py-4 lg:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white/5 gap-4 sm:gap-0">
                       <div className="flex items-center gap-3">
                         <div className="w-1.5 h-1.5 rounded-full bg-green shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                         <span className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Output: {selectedPlatform}</span>
                       </div>
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
                         {generatedContent && (
                           <>
                             <button 
@@ -647,33 +648,33 @@ export default function App() {
                         )}
                       </div>
                     </div>
-                    <div className="p-10 flex-grow overflow-auto prose prose-invert max-w-none">
+                    <div className="p-6 lg:p-10 flex-grow overflow-auto prose prose-invert max-w-none">
                       {isGenerating ? (
-                        <div className="h-full flex flex-col items-center justify-center text-muted space-y-6">
-                          <Loader2 className="animate-spin text-white" size={40} />
+                        <div className="h-full flex flex-col items-center justify-center text-muted space-y-6 py-12 lg:py-0">
+                          <Loader2 className="animate-spin text-white w-8 h-8 lg:w-10 lg:h-10" />
                           <p className="font-mono text-[10px] tracking-[0.3em] uppercase animate-pulse">Crafting viral narrative</p>
                         </div>
                       ) : generatedContent ? (
-                        <div className="space-y-12">
+                        <div className="space-y-8 lg:space-y-12">
                           {/* Virality Score Card */}
-                          <div className="flex flex-col md:flex-row gap-6">
-                            <div className="glass-card p-6 rounded-2xl flex-shrink-0 flex flex-col items-center justify-center min-w-[160px] border-accent2/20">
-                              <div className="text-4xl font-display font-black text-accent2 mb-1">{generatedContent.virality_score}%</div>
+                          <div className="flex flex-col md:flex-row gap-4 lg:gap-6">
+                            <div className="glass-card p-5 lg:p-6 rounded-2xl flex-shrink-0 flex flex-col items-center justify-center min-w-[140px] lg:min-w-[160px] border-accent2/20">
+                              <div className="text-3xl lg:text-4xl font-display font-black text-accent2 mb-1">{generatedContent.virality_score}%</div>
                               <div className="text-[9px] font-mono uppercase tracking-widest text-muted">Virality Score</div>
                             </div>
-                            <div className="glass-card p-6 rounded-2xl flex-grow bg-white/2 border-white/5">
-                              <div className="flex items-center gap-2 mb-3">
+                            <div className="glass-card p-5 lg:p-6 rounded-2xl flex-grow bg-white/2 border-white/5">
+                              <div className="flex items-center gap-2 mb-2 lg:mb-3">
                                 <Zap size={14} className="text-accent2" />
                                 <span className="text-[10px] font-mono uppercase tracking-widest text-muted">Strategist Insight</span>
                               </div>
-                              <p className="text-sm text-muted font-light leading-relaxed italic">
+                              <p className="text-xs lg:text-sm text-muted font-light leading-relaxed italic">
                                 "{generatedContent.virality_reason}"
                               </p>
                             </div>
                           </div>
 
                           {/* Main Content */}
-                          <div className="markdown-body font-light leading-relaxed text-lg bg-white/2 p-8 rounded-3xl border border-white/5">
+                          <div className="markdown-body font-light leading-relaxed text-base lg:text-lg bg-white/2 p-6 lg:p-8 rounded-2xl lg:rounded-3xl border border-white/5">
                             <ReactMarkdown>
                               {getPlatformContentString()}
                             </ReactMarkdown>
@@ -681,18 +682,18 @@ export default function App() {
 
                           {/* Hook A/B Tester */}
                           {generatedContent.content_metadata.hooks_ab_test && (
-                            <div className="space-y-6">
+                            <div className="space-y-4 lg:space-y-6">
                               <div className="flex items-center gap-3">
-                                <Sparkles className="text-accent" size={18} />
-                                <h4 className="font-display text-xl font-bold tracking-tight">Viral Hook A/B Tester</h4>
+                                <Sparkles className="text-accent w-4 h-4 lg:w-[18px] lg:h-[18px]" />
+                                <h4 className="font-display text-lg lg:text-xl font-bold tracking-tight">Viral Hook A/B Tester</h4>
                               </div>
-                              <div className="grid grid-cols-1 gap-4">
+                              <div className="grid grid-cols-1 gap-3 lg:gap-4">
                                 {generatedContent.content_metadata.hooks_ab_test.map((hook, i) => (
-                                  <div key={i} className="glass-card p-5 rounded-xl border-white/5 hover:border-accent/30 transition-all group flex items-center justify-between gap-4">
-                                    <p className="text-sm text-muted group-hover:text-white transition-colors">"{hook}"</p>
+                                  <div key={i} className="glass-card p-4 lg:p-5 rounded-xl border-white/5 hover:border-accent/30 transition-all group flex items-center justify-between gap-4">
+                                    <p className="text-xs lg:text-sm text-muted group-hover:text-white transition-colors">"{hook}"</p>
                                     <button 
                                       onClick={() => navigator.clipboard.writeText(hook)}
-                                      className="text-[9px] font-mono tracking-widest text-accent font-bold opacity-0 group-hover:opacity-100 transition-all"
+                                      className="text-[9px] font-mono tracking-widest text-accent font-bold opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all"
                                     >
                                       USE HOOK
                                     </button>
@@ -723,14 +724,14 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-12"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="space-y-8">
-                  <div className="glass-card p-10 rounded-3xl space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                <div className="space-y-6 lg:space-y-8">
+                  <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl space-y-6 lg:space-y-8">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-accent2/10 flex items-center justify-center">
-                        <ImageIcon className="text-accent2" size={24} />
+                      <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-accent2/10 flex items-center justify-center">
+                        <ImageIcon className="text-accent2 w-5 h-5 lg:w-6 lg:h-6" />
                       </div>
-                      <h3 className="font-display text-2xl font-bold tracking-tight">Free Image Generation</h3>
+                      <h3 className="font-display text-xl lg:text-2xl font-bold tracking-tight">Free Image Generation</h3>
                     </div>
 
                     <div className="space-y-4">
@@ -739,7 +740,7 @@ export default function App() {
                         value={imagePrompt}
                         onChange={(e) => setImagePrompt(e.target.value)}
                         placeholder="Describe the viral image you want to create... (e.g., A futuristic workspace with neon lighting and high-tech gadgets)"
-                        className="w-full bg-white/5 border border-white/10 px-6 py-5 rounded-2xl focus:outline-none focus:border-accent2 transition-all text-sm min-h-[150px] resize-none"
+                        className="w-full bg-white/5 border border-white/10 px-5 lg:px-6 py-4 lg:py-5 rounded-xl lg:rounded-2xl focus:outline-none focus:border-accent2 transition-all text-sm min-h-[120px] lg:min-h-[150px] resize-none"
                       />
                     </div>
 
@@ -774,10 +775,10 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-8">
+                <div className="flex flex-col gap-6 lg:gap-8">
                   <div className={cn(
-                    "glass-card rounded-3xl overflow-hidden relative flex items-center justify-center bg-black/40 min-h-[400px]",
-                    imageAspectRatio === '9:16' ? 'aspect-[9/16] max-h-[700px]' : imageAspectRatio === '16:9' ? 'aspect-[16/9]' : 'aspect-square'
+                    "glass-card rounded-2xl lg:rounded-3xl overflow-hidden relative flex items-center justify-center bg-black/40 min-h-[300px] lg:min-h-[400px]",
+                    imageAspectRatio === '9:16' ? 'aspect-[9/16] max-h-[500px] lg:max-h-[700px]' : imageAspectRatio === '16:9' ? 'aspect-[16/9]' : 'aspect-square'
                   )}>
                     {isGeneratingImage ? (
                       <div className="text-center space-y-4">
@@ -832,39 +833,39 @@ export default function App() {
                 </div>
               )}
               {!hasApiKey ? (
-                <div className="text-center py-32 glass-card rounded-3xl border border-white/5 relative overflow-hidden">
+                <div className="text-center py-16 lg:py-32 glass-card rounded-2xl lg:rounded-3xl border border-white/5 relative overflow-hidden px-6">
                   <div className="absolute inset-0 bg-gradient-to-b from-accent/10 to-transparent pointer-events-none" />
-                  <Key size={64} strokeWidth={1} className="mx-auto text-accent mb-8" />
-                  <h2 className="font-display text-4xl font-extrabold mb-4 tracking-tight">API Key Required</h2>
-                  <p className="text-muted max-w-lg mx-auto mb-12 text-lg font-light leading-relaxed">
+                  <Key strokeWidth={1} className="mx-auto text-accent mb-6 lg:mb-8 w-12 h-12 lg:w-16 lg:h-16" />
+                  <h2 className="font-display text-2xl lg:text-4xl font-extrabold mb-4 tracking-tight">API Key Required</h2>
+                  <p className="text-muted max-w-lg mx-auto mb-8 lg:mb-12 text-base lg:text-lg font-light leading-relaxed">
                     Video generation requires a paid Google Cloud project API key. Please select your key to continue.
                   </p>
                   <button 
                     onClick={handleOpenKeyDialog}
-                    className="bg-white hover:bg-white/90 text-black px-10 py-5 rounded-2xl font-bold transition-all inline-flex items-center gap-3 shadow-xl shadow-white/5"
+                    className="bg-white hover:bg-white/90 text-black px-8 lg:px-10 py-4 lg:py-5 rounded-xl lg:rounded-2xl font-bold transition-all inline-flex items-center gap-3 shadow-xl shadow-white/5"
                   >
-                    <span className="tracking-widest text-[11px] uppercase">SELECT API KEY</span> <ArrowRight size={18} />
+                    <span className="tracking-widest text-[10px] lg:text-[11px] uppercase">SELECT API KEY</span> <ArrowRight className="w-4 h-4 lg:w-[18px] lg:h-[18px]" />
                   </button>
                   <p className="mt-6 text-xs text-muted">
                     Learn more about <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-white">Gemini API billing</a>.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                  <div className="space-y-8">
-                    <div className="glass-card p-10 rounded-3xl space-y-8">
-                      <div className="flex items-center justify-between gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+                  <div className="space-y-6 lg:space-y-8">
+                    <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl space-y-6 lg:space-y-8">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-accent3/10 flex items-center justify-center">
-                            <Video className="text-accent3" size={24} />
+                          <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-accent3/10 flex items-center justify-center">
+                            <Video className="text-accent3 w-5 h-5 lg:w-6 lg:h-6" />
                           </div>
-                          <h3 className="font-display text-2xl font-bold tracking-tight">Video Generation</h3>
+                          <h3 className="font-display text-xl lg:text-2xl font-bold tracking-tight">Video Generation</h3>
                         </div>
-                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-full sm:w-auto">
                           <button 
                             onClick={() => setVideoMode('free')}
                             className={cn(
-                              "px-4 py-2 rounded-lg text-[10px] font-mono tracking-widest transition-all",
+                              "flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] font-mono tracking-widest transition-all",
                               videoMode === 'free' ? "bg-white text-black" : "text-muted hover:text-white"
                             )}
                           >
@@ -873,7 +874,7 @@ export default function App() {
                           <button 
                             onClick={() => setVideoMode('premium')}
                             className={cn(
-                              "px-4 py-2 rounded-lg text-[10px] font-mono tracking-widest transition-all",
+                              "flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] font-mono tracking-widest transition-all",
                               videoMode === 'premium' ? "bg-white text-black" : "text-muted hover:text-white"
                             )}
                           >
@@ -888,7 +889,7 @@ export default function App() {
                           value={videoPrompt}
                           onChange={(e) => setVideoPrompt(e.target.value)}
                           placeholder={videoMode === 'free' ? "Describe your viral video topic..." : "Describe the video you want to generate... (e.g., A neon hologram of a cat driving at top speed)"}
-                          className="w-full bg-white/5 border border-white/10 px-6 py-5 rounded-2xl focus:outline-none focus:border-accent3 transition-all text-sm min-h-[150px] resize-none"
+                          className="w-full bg-white/5 border border-white/10 px-5 lg:px-6 py-4 lg:py-5 rounded-xl lg:rounded-2xl focus:outline-none focus:border-accent3 transition-all text-sm min-h-[120px] lg:min-h-[150px] resize-none"
                         />
                       </div>
 
@@ -925,31 +926,31 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-8">
-                    <div className="glass-card rounded-3xl aspect-[9/16] max-h-[700px] overflow-hidden relative flex items-center justify-center bg-black/40">
+                  <div className="flex flex-col gap-6 lg:gap-8">
+                    <div className="glass-card rounded-2xl lg:rounded-3xl aspect-[9/16] max-h-[500px] lg:max-h-[700px] overflow-hidden relative flex items-center justify-center bg-black/40">
                       {isGeneratingVideo ? (
-                        <div className="text-center space-y-6 px-10">
+                        <div className="text-center space-y-6 px-6 lg:px-10">
                           <div className="relative">
-                            <Loader2 className="animate-spin text-accent3 mx-auto" size={64} strokeWidth={1} />
+                            <Loader2 className="animate-spin text-accent3 mx-auto w-12 h-12 lg:w-16 lg:h-16" strokeWidth={1} />
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-8 h-8 bg-accent3/20 rounded-full animate-ping" />
+                              <div className="w-6 h-6 lg:w-8 lg:h-8 bg-accent3/20 rounded-full animate-ping" />
                             </div>
                           </div>
                           <div className="space-y-2">
                             <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-white animate-pulse">
                               {videoMode === 'free' ? 'Generating Assets' : 'Synthesizing Pixels'}
                             </p>
-                            <p className="text-xs text-muted font-light">This usually takes about 30-60 seconds...</p>
+                            <p className="text-[10px] lg:text-xs text-muted font-light">This usually takes about 30-60 seconds...</p>
                           </div>
                         </div>
                       ) : videoMode === 'free' && freeVideoAssets ? (
-                        <div className="relative w-full h-full flex flex-col items-center justify-center p-10 text-center space-y-8">
+                        <div className="relative w-full h-full flex flex-col items-center justify-center p-6 lg:p-10 text-center space-y-6 lg:space-y-8">
                           <div className="absolute inset-0 bg-gradient-to-b from-accent3/20 to-black/60" />
                           
                           {/* Visual Placeholder for B-Roll */}
-                          <div className="relative z-10 w-full aspect-square rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
-                            <ImageIcon size={48} className="text-white/20 animate-pulse" />
-                            <div className="absolute bottom-4 left-4 right-4 text-[8px] font-mono text-muted uppercase tracking-widest">
+                          <div className="relative z-10 w-full aspect-square rounded-xl lg:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                            <ImageIcon className="text-white/20 animate-pulse w-8 h-8 lg:w-12 lg:h-12" />
+                            <div className="absolute bottom-3 lg:bottom-4 left-3 lg:left-4 right-3 lg:right-4 text-[7px] lg:text-[8px] font-mono text-muted uppercase tracking-widest">
                               B-Roll Idea: {freeVideoAssets.b_roll_search_terms[0]}
                             </div>
                           </div>
@@ -962,7 +963,7 @@ export default function App() {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 1.1 }}
-                                className="relative z-20 bg-white text-black font-black text-2xl py-3 px-6 transform -rotate-1 shadow-2xl"
+                                className="relative z-20 bg-white text-black font-black text-xl lg:text-2xl py-2 lg:py-3 px-4 lg:px-6 transform -rotate-1 shadow-2xl"
                               >
                                 {currentCaption}
                               </motion.div>
@@ -972,9 +973,9 @@ export default function App() {
                           {!isPlayingFreeVideo && (
                             <button 
                               onClick={handlePlayFreeVideo}
-                              className="relative z-20 w-20 h-20 rounded-full bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
+                              className="relative z-20 w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
                             >
-                              <Play size={32} fill="currentColor" />
+                              <Play className="w-6 h-6 lg:w-8 lg:h-8" fill="currentColor" />
                             </button>
                           )}
 
@@ -1022,105 +1023,105 @@ export default function App() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="space-y-12"
+              className="space-y-6 lg:space-y-12"
             >
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                  <h2 className="font-display text-4xl font-extrabold mb-3 tracking-tight">Preview & Verify</h2>
-                  <p className="text-muted text-base font-light">Review how your post looks on {selectedPlatform} before publishing.</p>
+                  <h2 className="font-display text-2xl lg:text-4xl font-extrabold mb-2 md:mb-3 tracking-tight">Preview & Verify</h2>
+                  <p className="text-muted text-xs lg:text-base font-light">Review how your post looks on {selectedPlatform} before publishing.</p>
                 </div>
-                  <div className="flex gap-4">
+                  <div className="flex flex-wrap gap-3 md:gap-4">
                     <button 
                       onClick={() => setActiveTab('write')}
-                      className="bg-white/5 border border-white/10 text-white px-6 py-4 rounded-xl font-bold transition-all hover:bg-white/10 text-[11px] tracking-widest uppercase"
+                      className="flex-grow md:flex-grow-0 bg-white/5 border border-white/10 text-white px-4 md:px-6 py-3 md:py-4 rounded-xl font-bold transition-all hover:bg-white/10 text-[10px] md:text-[11px] tracking-widest uppercase"
                     >
                       EDIT CONTENT
                     </button>
                     <button 
                       onClick={() => setShowScheduleModal(true)}
                       disabled={isPublished || !generatedContent}
-                      className="flex items-center gap-2 bg-accent/10 border border-accent/20 text-accent px-6 py-4 rounded-xl font-bold transition-all disabled:opacity-50 text-[11px] tracking-widest uppercase"
+                      className="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 bg-accent/10 border border-accent/20 text-accent px-4 md:px-6 py-3 md:py-4 rounded-xl font-bold transition-all disabled:opacity-50 text-[10px] md:text-[11px] tracking-widest uppercase"
                     >
-                      <Clock size={16} />
+                      <Clock size={14} />
                       SCHEDULE
                     </button>
                     <button 
                       onClick={() => handlePublish(false)}
                       disabled={isPublished || !generatedContent}
-                      className="flex items-center gap-2 bg-white hover:bg-white/90 text-black px-8 py-4 rounded-xl font-bold transition-all disabled:opacity-50 text-[11px] tracking-widest uppercase shadow-xl shadow-white/5"
+                      className="w-full md:w-auto flex items-center justify-center gap-2 bg-white hover:bg-white/90 text-black px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold transition-all disabled:opacity-50 text-[10px] md:text-[11px] tracking-widest uppercase shadow-xl shadow-white/5"
                     >
-                      {isPublished ? <Loader2 className="animate-spin" size={16} /> : <Share2 size={16} />}
+                      {isPublished ? <Loader2 className="animate-spin" size={14} /> : <Share2 size={14} />}
                       {isPublished ? 'PUBLISHING...' : 'PUBLISH NOW'}
                     </button>
                   </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
                 {/* Mockup */}
-                <div className="flex justify-center items-start">
+                <div className="flex justify-center items-start overflow-hidden">
                   {selectedPlatform === 'Twitter' && generatedContent?.platform_outputs.twitter_thread && (
-                    <div className="w-full max-w-md bg-white text-black p-8 rounded-3xl shadow-2xl">
-                      <div className="flex gap-4 mb-6">
-                        <div className="w-12 h-12 rounded-full bg-gray-100 border border-gray-200" />
+                    <div className="w-full max-w-md bg-white text-black p-5 lg:p-8 rounded-2xl lg:rounded-3xl shadow-2xl">
+                      <div className="flex gap-3 lg:gap-4 mb-4 lg:mb-6">
+                        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-gray-100 border border-gray-200" />
                         <div>
-                          <div className="font-bold text-base">ViralFlow AI</div>
-                          <div className="text-gray-500 text-sm">@viralflow_ai · 1m</div>
+                          <div className="font-bold text-sm lg:text-base">ViralFlow AI</div>
+                          <div className="text-gray-500 text-[10px] lg:text-sm">@viralflow_ai · 1m</div>
                         </div>
                       </div>
-                      <div className="text-lg leading-relaxed mb-6 whitespace-pre-wrap font-light">
+                      <div className="text-sm lg:text-lg leading-relaxed mb-4 lg:mb-6 whitespace-pre-wrap font-light">
                         {generatedContent.platform_outputs.twitter_thread.hook_tweet}
                       </div>
-                      <div className="text-blue-500 mb-6 font-medium">
+                      <div className="text-blue-500 mb-4 lg:mb-6 font-medium text-xs lg:text-base">
                         {generatedContent.platform_outputs.twitter_thread.tweets[0].substring(0, 100)}...
                       </div>
-                      <div className="flex justify-between text-gray-400 border-t border-gray-100 pt-6">
-                        <Share2 size={20} />
-                        <TrendingUp size={20} />
-                        <Zap size={20} />
-                        <Search size={20} />
+                      <div className="flex justify-between text-gray-400 border-t border-gray-100 pt-4 lg:pt-6">
+                        <Share2 className="w-4 h-4 lg:w-[18px] lg:h-[18px]" />
+                        <TrendingUp className="w-4 h-4 lg:w-[18px] lg:h-[18px]" />
+                        <Zap className="w-4 h-4 lg:w-[18px] lg:h-[18px]" />
+                        <Search className="w-4 h-4 lg:w-[18px] lg:h-[18px]" />
                       </div>
                     </div>
                   )}
 
                   {selectedPlatform === 'Instagram' && generatedContent?.platform_outputs.instagram_caption && (
-                    <div className="relative w-[340px] h-[680px] bg-black rounded-[3.5rem] border-[12px] border-white/10 shadow-2xl overflow-hidden">
+                    <div className="relative w-full max-w-[320px] aspect-[9/18] bg-black rounded-[2.5rem] md:rounded-[3.5rem] border-[8px] md:border-[12px] border-white/10 shadow-2xl overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80" />
-                      <div className="absolute bottom-0 left-0 right-0 p-8 space-y-5">
+                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 space-y-4 md:space-y-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-white/20 border border-white/40 backdrop-blur-md" />
-                          <div className="font-bold text-white text-sm">@viralflow_ai</div>
+                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 border border-white/40 backdrop-blur-md" />
+                          <div className="font-bold text-white text-xs md:text-sm">@viralflow_ai</div>
                         </div>
-                        <p className="text-white text-sm line-clamp-4 leading-relaxed font-light">
+                        <p className="text-white text-xs md:text-sm line-clamp-4 leading-relaxed font-light">
                           <span className="font-bold text-accent2">{generatedContent.platform_outputs.instagram_caption.hook}</span> {generatedContent.platform_outputs.instagram_caption.body}
                         </p>
-                        <div className="flex items-center gap-2 text-white/70 text-[10px] font-mono tracking-wider">
-                          <Sparkles size={12} /> Original Audio - ViralFlow AI
+                        <div className="flex items-center gap-2 text-white/70 text-[9px] md:text-[10px] font-mono tracking-wider">
+                          <Sparkles className="w-2.5 h-2.5" /> Original Audio - ViralFlow AI
                         </div>
                       </div>
-                      <div className="absolute right-6 bottom-32 flex flex-col gap-8 text-white/90">
-                        <div className="flex flex-col items-center gap-1.5"><Zap size={26} /><span className="text-[10px] font-bold">12.4K</span></div>
-                        <div className="flex flex-col items-center gap-1.5"><Share2 size={26} /><span className="text-[10px] font-bold">2.1K</span></div>
-                        <div className="flex flex-col items-center gap-1.5"><TrendingUp size={26} /><span className="text-[10px] font-bold">842</span></div>
+                      <div className="absolute right-4 md:right-6 bottom-24 md:bottom-32 flex flex-col gap-6 md:gap-8 text-white/90">
+                        <div className="flex flex-col items-center gap-1"><Zap className="w-[22px] h-[22px] md:w-[26px] md:h-[26px]" /><span className="text-[8px] md:text-[10px] font-bold">12.4K</span></div>
+                        <div className="flex flex-col items-center gap-1"><Share2 className="w-[22px] h-[22px] md:w-[26px] md:h-[26px]" /><span className="text-[8px] md:text-[10px] font-bold">2.1K</span></div>
+                        <div className="flex flex-col items-center gap-1"><TrendingUp className="w-[22px] h-[22px] md:w-[26px] md:h-[26px]" /><span className="text-[8px] md:text-[10px] font-bold">842</span></div>
                       </div>
                     </div>
                   )}
 
                   {selectedPlatform === 'LinkedIn' && generatedContent?.platform_outputs.linkedin_post && (
-                    <div className="w-full max-w-xl bg-white text-black p-10 rounded-2xl shadow-2xl border border-gray-100">
-                      <div className="flex gap-5 mb-8">
-                        <div className="w-16 h-16 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-3xl">V</div>
+                    <div className="w-full max-w-xl bg-white text-black p-6 md:p-10 rounded-xl md:rounded-2xl shadow-2xl border border-gray-100">
+                      <div className="flex gap-4 md:gap-5 mb-6 md:mb-8">
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-lg md:rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-2xl md:text-3xl">V</div>
                         <div>
-                          <div className="font-bold text-xl">ViralFlow AI</div>
-                          <div className="text-gray-500 text-sm">Automated Content Strategist</div>
-                          <div className="text-gray-400 text-xs">1m · Edited</div>
+                          <div className="font-bold text-lg md:text-xl">ViralFlow AI</div>
+                          <div className="text-gray-500 text-xs md:text-sm">Automated Content Strategist</div>
+                          <div className="text-gray-400 text-[10px] md:text-xs">1m · Edited</div>
                         </div>
                       </div>
-                      <div className="text-base leading-relaxed mb-8 whitespace-pre-wrap font-light text-gray-800">
-                        <p className="font-bold text-black mb-3 text-lg">{generatedContent.platform_outputs.linkedin_post.opener}</p>
+                      <div className="text-sm md:text-base leading-relaxed mb-6 md:mb-8 whitespace-pre-wrap font-light text-gray-800">
+                        <p className="font-bold text-black mb-2 md:mb-3 text-base md:text-lg">{generatedContent.platform_outputs.linkedin_post.opener}</p>
                         {generatedContent.platform_outputs.linkedin_post.body}
-                        <p className="font-bold text-blue-600 mt-6 text-lg">{generatedContent.platform_outputs.linkedin_post.cta}</p>
+                        <p className="font-bold text-blue-600 mt-4 md:mt-6 text-base md:text-lg">{generatedContent.platform_outputs.linkedin_post.cta}</p>
                       </div>
-                      <div className="flex gap-8 text-gray-400 font-bold text-sm border-t border-gray-100 pt-6">
+                      <div className="flex flex-wrap gap-4 md:gap-8 text-gray-400 font-bold text-xs md:text-sm border-t border-gray-100 pt-4 md:pt-6">
                         <span className="hover:text-blue-600 cursor-pointer transition-colors">Like</span>
                         <span className="hover:text-blue-600 cursor-pointer transition-colors">Comment</span>
                         <span className="hover:text-blue-600 cursor-pointer transition-colors">Repost</span>
@@ -1130,23 +1131,23 @@ export default function App() {
                   )}
 
                   {selectedPlatform === 'TikTok' && generatedContent?.platform_outputs.tiktok_script && (
-                    <div className="relative w-[340px] h-[680px] bg-black rounded-[3.5rem] border-[12px] border-white/10 shadow-2xl overflow-hidden">
+                    <div className="relative w-full max-w-[320px] aspect-[9/18] bg-black rounded-[2.5rem] md:rounded-[3.5rem] border-[8px] md:border-[12px] border-white/10 shadow-2xl overflow-hidden">
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/80" />
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full px-6">
-                        <div className="bg-white text-black font-black text-2xl py-3 px-6 inline-block transform -rotate-2 shadow-2xl">
+                        <div className="bg-white text-black font-black text-xl md:text-2xl py-2 md:py-3 px-4 md:px-6 inline-block transform -rotate-2 shadow-2xl">
                           {generatedContent.platform_outputs.tiktok_script.on_screen_text[0]}
                         </div>
                       </div>
-                      <div className="absolute bottom-0 left-0 right-0 p-8 space-y-5">
+                      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 space-y-4 md:space-y-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-white/20 border border-white/40 backdrop-blur-md" />
-                          <div className="font-bold text-white text-sm">@viralflow_ai</div>
+                          <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 border border-white/40 backdrop-blur-md" />
+                          <div className="font-bold text-white text-xs md:text-sm">@viralflow_ai</div>
                         </div>
-                        <p className="text-white text-sm line-clamp-4 leading-relaxed font-light">
+                        <p className="text-white text-xs md:text-sm line-clamp-4 leading-relaxed font-light">
                           {generatedContent.platform_outputs.tiktok_script.hook_line} #viral #ai
                         </p>
-                        <div className="flex items-center gap-2 text-white/70 text-[10px] font-mono tracking-wider">
-                          <Sparkles size={12} /> {generatedContent.platform_outputs.tiktok_script.trending_audio_suggestion}
+                        <div className="flex items-center gap-2 text-white/70 text-[9px] md:text-[10px] font-mono tracking-wider">
+                          <Sparkles size={10} /> {generatedContent.platform_outputs.tiktok_script.trending_audio_suggestion}
                         </div>
                       </div>
                     </div>
@@ -1161,10 +1162,10 @@ export default function App() {
                 </div>
 
                 {/* Verification Checklist */}
-                <div className="space-y-8">
-                  <div className="glass-card p-10 rounded-3xl">
-                    <h3 className="font-display text-2xl font-bold mb-8 tracking-tight">Verification Checklist</h3>
-                    <div className="space-y-5">
+                <div className="space-y-6 lg:space-y-8">
+                  <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl">
+                    <h3 className="font-display text-xl lg:text-2xl font-bold mb-6 lg:mb-8 tracking-tight">Verification Checklist</h3>
+                    <div className="space-y-4 lg:space-y-5">
                       {[
                         { id: 'hook', label: "Hook is strong and visible in first 3 lines" },
                         { id: 'pattern', label: "No grammatical errors or AI hallucinations" },
@@ -1173,20 +1174,20 @@ export default function App() {
                         { id: 'voice', label: "Tone matches your brand voice" },
                         { id: 'mobile', label: "Formatting is clean and scannable" }
                       ].map((item) => (
-                        <label key={item.id} className="flex items-center gap-5 cursor-pointer group">
+                        <label key={item.id} className="flex items-center gap-4 lg:gap-5 cursor-pointer group">
                           <div className="relative flex items-center justify-center">
                             <input 
                               type="checkbox" 
                               checked={checklist[item.id as keyof typeof checklist]}
                               onChange={() => setChecklist(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof checklist] }))}
-                              className="peer w-6 h-6 rounded-lg border-white/10 bg-white/5 text-accent2 focus:ring-accent2 transition-all appearance-none border checked:bg-accent2 checked:border-accent2" 
+                              className="peer w-5 h-5 lg:w-6 lg:h-6 rounded-lg border-white/10 bg-white/5 text-accent2 focus:ring-accent2 transition-all appearance-none border checked:bg-accent2 checked:border-accent2" 
                             />
                             <div className="absolute text-black opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                              <svg className="w-2.5 h-2.5 lg:w-3 lg:h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                             </div>
                           </div>
                           <span className={cn(
-                            "text-base transition-all duration-300",
+                            "text-sm lg:text-base transition-all duration-300",
                             checklist[item.id as keyof typeof checklist] ? "text-accent2 line-through opacity-40" : "text-muted group-hover:text-text"
                           )}>
                             {item.label}
@@ -1196,31 +1197,31 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="bg-accent2/5 border border-accent2/10 p-8 rounded-3xl backdrop-blur-sm">
-                    <div className="flex items-center gap-4 mb-5">
-                      <div className="w-10 h-10 rounded-xl bg-accent2/10 flex items-center justify-center">
-                        <Zap className="text-accent2" size={20} />
+                  <div className="bg-accent2/5 border border-accent2/10 p-6 lg:p-8 rounded-2xl lg:rounded-3xl backdrop-blur-sm">
+                    <div className="flex items-center gap-4 mb-4 lg:mb-5">
+                      <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl bg-accent2/10 flex items-center justify-center">
+                        <Zap className="text-accent2 w-4 h-4 lg:w-5 lg:h-5" />
                       </div>
-                      <h4 className="font-bold text-sm tracking-widest uppercase">AI Optimization Tip</h4>
+                      <h4 className="font-bold text-xs lg:text-sm tracking-widest uppercase">AI Optimization Tip</h4>
                     </div>
-                    <p className="text-muted text-base leading-relaxed font-light">
+                    <p className="text-muted text-sm lg:text-base leading-relaxed font-light">
                       {generatedContent?.content_metadata.repurpose_tip || `Based on current ${selectedPlatform} algorithm data, adding a question at the end of this post could increase engagement by up to 24%.`}
                     </p>
                   </div>
 
-                  <div className="glass-card p-8 rounded-3xl flex items-center justify-between">
-                    <div className="flex items-center gap-5">
-                      <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">
-                        <Clock size={24} className="text-accent2" />
+                  <div className="glass-card p-6 lg:p-8 rounded-2xl lg:rounded-3xl flex items-center justify-between">
+                    <div className="flex items-center gap-4 lg:gap-5">
+                      <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-white/5 flex items-center justify-center">
+                        <Clock className="text-accent2 w-5 h-5 lg:w-6 lg:h-6" />
                       </div>
                       <div>
-                        <div className="text-2xl font-bold tracking-tight">
+                        <div className="text-xl lg:text-2xl font-bold tracking-tight">
                           {generatedContent?.content_metadata.best_posting_times[selectedPlatform.toLowerCase() as keyof typeof generatedContent.content_metadata.best_posting_times] || '09:45 AM'}
                         </div>
-                        <div className="text-[9px] text-muted uppercase tracking-[0.2em] font-mono">Best Posting Time</div>
+                        <div className="text-[8px] lg:text-[9px] text-muted uppercase tracking-[0.2em] font-mono">Best Posting Time</div>
                       </div>
                     </div>
-                    <div className="text-[10px] text-muted/50 font-mono uppercase tracking-widest">Local Time Zone</div>
+                    <div className="text-[8px] lg:text-[10px] text-muted/50 font-mono uppercase tracking-widest">Local Time Zone</div>
                   </div>
                 </div>
               </div>
@@ -1233,15 +1234,15 @@ export default function App() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="space-y-12"
+              className="space-y-8 lg:space-y-12"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                <div className="lg:col-span-2 space-y-12">
-                  <div className="glass-card p-10 rounded-3xl space-y-10">
-                    <h3 className="font-display text-3xl font-extrabold flex items-center gap-4 tracking-tight">
-                      <ShieldCheck className="text-accent2" size={32} /> Brand Identity
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+                <div className="lg:col-span-2 space-y-8 lg:space-y-12">
+                  <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl space-y-8 lg:space-y-10">
+                    <h3 className="font-display text-2xl lg:text-3xl font-extrabold flex items-center gap-4 tracking-tight">
+                      <ShieldCheck className="text-accent2 w-6 h-6 lg:w-8 lg:h-8" /> Brand Identity
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
                       <div className="space-y-3">
                         <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Brand Voice</label>
                         <input 
@@ -1262,7 +1263,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10 border-t border-white/5">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 pt-8 lg:pt-10 border-t border-white/5">
                       <div className="space-y-3">
                         <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Content Length</label>
                         <select 
@@ -1288,7 +1289,7 @@ export default function App() {
                         </select>
                       </div>
                       <div className="space-y-3 flex flex-col justify-end">
-                        <label className="flex items-center gap-4 cursor-pointer group pb-4">
+                        <label className="flex items-center gap-4 cursor-pointer group pb-2 lg:pb-4">
                           <input 
                             type="checkbox" 
                             checked={autoOptimize}
@@ -1302,27 +1303,27 @@ export default function App() {
                   </div>
 
                   {/* Schedule Queue */}
-                  <div className="glass-card p-10 rounded-3xl space-y-8">
-                    <h3 className="font-display text-3xl font-extrabold flex items-center gap-4 tracking-tight">
-                      <Calendar className="text-accent2" size={32} /> Schedule Queue
+                  <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl space-y-6 lg:space-y-8">
+                    <h3 className="font-display text-2xl lg:text-3xl font-extrabold flex items-center gap-4 tracking-tight">
+                      <Calendar className="text-accent2 w-6 h-6 lg:w-8 lg:h-8" /> Schedule Queue
                     </h3>
                     <div className="space-y-4">
                       {scheduledPosts.length === 0 ? (
-                        <div className="py-12 text-center bg-white/2 border border-dashed border-white/5 rounded-2xl">
+                        <div className="py-8 lg:py-12 text-center bg-white/2 border border-dashed border-white/5 rounded-xl lg:rounded-2xl">
                           <p className="text-muted text-sm italic font-light">No posts scheduled for the next week/month.</p>
                         </div>
                       ) : (
                         scheduledPosts.map((post) => (
-                          <div key={post.id} className="flex items-center justify-between p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-white/20 transition-all">
+                          <div key={post.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 lg:p-6 bg-white/5 border border-white/10 rounded-xl lg:rounded-2xl hover:border-white/20 transition-all gap-4">
                             <div className="space-y-2">
                               <div className="text-base font-bold">{post.topic}</div>
-                              <div className="flex items-center gap-4 text-[10px] text-muted uppercase tracking-[0.1em] font-mono">
+                              <div className="flex flex-wrap items-center gap-3 lg:gap-4 text-[9px] lg:text-[10px] text-muted uppercase tracking-[0.1em] font-mono">
                                 <span className="text-accent font-bold">{post.platform}</span>
-                                <span className="opacity-30">•</span>
+                                <span className="opacity-30 hidden sm:inline">•</span>
                                 <span>Scheduled: {new Date(post.scheduledDate).toLocaleString()}</span>
                               </div>
                             </div>
-                            <div className="px-3 py-1.5 bg-accent/10 border border-accent/20 text-accent text-[10px] font-bold rounded-lg uppercase tracking-widest">
+                            <div className="self-start sm:self-center px-3 py-1.5 bg-accent/10 border border-accent/20 text-accent text-[9px] lg:text-[10px] font-bold rounded-lg uppercase tracking-widest">
                               {post.status}
                             </div>
                           </div>
@@ -1332,23 +1333,23 @@ export default function App() {
                   </div>
 
                   {/* Content Archive */}
-                  <div className="glass-card p-10 rounded-3xl space-y-8">
-                    <h3 className="font-display text-3xl font-extrabold flex items-center gap-4 tracking-tight">
-                      <Clock className="text-accent" size={32} /> Content Archive
+                  <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl space-y-6 lg:space-y-8">
+                    <h3 className="font-display text-2xl lg:text-3xl font-extrabold flex items-center gap-4 tracking-tight">
+                      <Clock className="text-accent w-6 h-6 lg:w-8 lg:h-8" /> Content Archive
                     </h3>
                     <div className="space-y-4">
                       {archive.length === 0 ? (
-                        <div className="py-12 text-center bg-white/2 border border-dashed border-white/5 rounded-2xl">
+                        <div className="py-8 lg:py-12 text-center bg-white/2 border border-dashed border-white/5 rounded-xl lg:rounded-2xl">
                           <p className="text-muted text-sm italic font-light">No generated content yet.</p>
                         </div>
                       ) : (
                         archive.map((item, i) => (
-                          <div key={i} className="flex items-center justify-between p-6 bg-white/5 border border-white/10 rounded-2xl hover:border-accent/30 transition-all group cursor-pointer">
+                          <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-5 lg:p-6 bg-white/5 border border-white/10 rounded-xl lg:rounded-2xl hover:border-accent/30 transition-all group cursor-pointer gap-4">
                             <div className="space-y-2">
                               <div className="text-base font-bold">{item.topic}</div>
-                              <div className="flex items-center gap-4 text-[10px] text-muted uppercase tracking-[0.1em] font-mono">
+                              <div className="flex flex-wrap items-center gap-3 lg:gap-4 text-[9px] lg:text-[10px] text-muted uppercase tracking-[0.1em] font-mono">
                                 <span className="text-accent2 font-bold">{item.platform}</span>
-                                <span className="opacity-30">•</span>
+                                <span className="opacity-30 hidden sm:inline">•</span>
                                 <span>{item.date}</span>
                               </div>
                             </div>
@@ -1358,7 +1359,7 @@ export default function App() {
                                 setSelectedPlatform(item.platform as any);
                                 setActiveTab('preview');
                               }}
-                              className="text-accent opacity-0 group-hover:opacity-100 transition-all hover:underline text-[10px] font-mono tracking-widest uppercase font-bold"
+                              className="self-start sm:self-center text-accent opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all hover:underline text-[9px] lg:text-[10px] font-mono tracking-widest uppercase font-bold"
                             >
                               RESTORE
                             </button>
@@ -1369,52 +1370,52 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="space-y-12">
-                  <div className="glass-card p-10 rounded-3xl space-y-8">
-                    <h3 className="font-display text-2xl font-extrabold flex items-center gap-4 tracking-tight">
-                      <Globe className="text-accent3" size={28} /> Publishing Channels
+                <div className="space-y-8 lg:space-y-12">
+                  <div className="glass-card p-6 lg:p-10 rounded-2xl lg:rounded-3xl space-y-6 lg:space-y-8">
+                    <h3 className="font-display text-xl lg:text-2xl font-extrabold flex items-center gap-4 tracking-tight">
+                      <Globe className="text-accent3 w-6 h-6 lg:w-7 lg:h-7" /> Publishing Channels
                     </h3>
-                    <div className="space-y-5">
+                    <div className="space-y-4 lg:space-y-5">
                       {[
                         { name: 'Buffer', status: 'Connected', color: 'text-green-400' },
                         { name: 'TikTok Developer', status: 'Pending', color: 'text-yellow-400' },
                         { name: 'YouTube Data API', status: 'Connected', color: 'text-green-400' },
                         { name: 'X (Twitter) API', status: 'Not Configured', color: 'text-muted' }
                       ].map((channel) => (
-                        <div key={channel.name} className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl">
-                          <div className="space-y-1.5">
-                            <div className="text-sm font-bold">{channel.name}</div>
-                            <div className={cn("text-[9px] font-mono uppercase tracking-[0.2em]", channel.color)}>
+                        <div key={channel.name} className="flex items-center justify-between p-4 lg:p-5 bg-white/5 border border-white/10 rounded-xl lg:rounded-2xl">
+                          <div className="space-y-1">
+                            <div className="text-xs lg:text-sm font-bold">{channel.name}</div>
+                            <div className={cn("text-[8px] lg:text-[9px] font-mono uppercase tracking-[0.2em]", channel.color)}>
                               {channel.status}
                             </div>
                           </div>
                           {channel.status !== 'Connected' && (
-                            <button className="text-[10px] font-bold text-accent hover:underline tracking-widest uppercase">CONNECT</button>
+                            <button className="text-[9px] lg:text-[10px] font-bold text-accent hover:underline tracking-widest uppercase">CONNECT</button>
                           )}
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="bg-white/5 border border-white/10 p-10 rounded-3xl backdrop-blur-md">
-                    <h4 className="font-display text-xl font-bold mb-8 flex items-center gap-3 tracking-tight">
-                      <Sparkles size={20} className="text-accent2" /> The Process
+                  <div className="bg-white/5 border border-white/10 p-6 lg:p-10 rounded-2xl lg:rounded-3xl backdrop-blur-md">
+                    <h4 className="font-display text-lg lg:text-xl font-bold mb-6 lg:mb-8 flex items-center gap-3 tracking-tight">
+                      <Sparkles className="text-accent2 w-[18px] h-[18px] lg:w-5 lg:h-5" /> The Process
                     </h4>
-                    <ol className="space-y-6 text-sm text-muted font-light leading-relaxed">
-                      <li className="flex gap-4">
-                        <span className="font-mono text-accent font-bold text-xs mt-1">01</span>
+                    <ol className="space-y-4 lg:space-y-6 text-xs lg:text-sm text-muted font-light leading-relaxed">
+                      <li className="flex gap-3 lg:gap-4">
+                        <span className="font-mono text-accent font-bold text-[10px] lg:text-xs mt-0.5 lg:mt-1">01</span>
                         <span>AI scouts global trends and scores them for virality.</span>
                       </li>
-                      <li className="flex gap-4">
-                        <span className="font-mono text-accent font-bold text-xs mt-1">02</span>
+                      <li className="flex gap-3 lg:gap-4">
+                        <span className="font-mono text-accent font-bold text-[10px] lg:text-xs mt-0.5 lg:mt-1">02</span>
                         <span>Select a topic and platform to generate optimized content.</span>
                       </li>
-                      <li className="flex gap-4">
-                        <span className="font-mono text-accent font-bold text-xs mt-1">03</span>
+                      <li className="flex gap-3 lg:gap-4">
+                        <span className="font-mono text-accent font-bold text-[10px] lg:text-xs mt-0.5 lg:mt-1">03</span>
                         <span>Use the Preview tab to verify the visual layout and hook.</span>
                       </li>
-                      <li className="flex gap-4">
-                        <span className="font-mono text-accent font-bold text-xs mt-1">04</span>
+                      <li className="flex gap-3 lg:gap-4">
+                        <span className="font-mono text-accent font-bold text-[10px] lg:text-xs mt-0.5 lg:mt-1">04</span>
                         <span>Publish directly via connected APIs or copy to your scheduler.</span>
                       </li>
                     </ol>
@@ -1441,46 +1442,46 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md glass p-10 rounded-[2.5rem] shadow-2xl space-y-8 border border-white/10"
+              className="relative w-full max-w-md glass p-6 lg:p-10 rounded-2xl lg:rounded-[2.5rem] shadow-2xl space-y-6 lg:space-y-8 border border-white/10 mx-4"
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-3xl font-extrabold flex items-center gap-4 tracking-tight">
-                  <Clock className="text-accent" size={32} /> Schedule Post
+                <h3 className="font-display text-xl lg:text-3xl font-extrabold flex items-center gap-3 lg:gap-4 tracking-tight">
+                  <Clock className="text-accent w-6 h-6 lg:w-8 lg:h-8" /> Schedule Post
                 </h3>
                 <button onClick={() => setShowScheduleModal(false)} className="text-muted hover:text-white transition-colors">
-                  <X size={28} strokeWidth={1} />
+                  <X className="w-5 h-5 lg:w-7 lg:h-7" strokeWidth={1} />
                 </button>
               </div>
               
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Select Date & Time</label>
+                  <label className="font-mono text-[8px] lg:text-[9px] text-muted uppercase tracking-[0.2em]">Select Date & Time</label>
                   <input 
                     type="datetime-local" 
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 px-6 py-4 rounded-2xl focus:outline-none focus:border-accent transition-all text-sm text-white appearance-none"
+                    className="w-full bg-white/5 border border-white/10 px-5 lg:px-6 py-3 lg:py-4 rounded-xl lg:rounded-2xl focus:outline-none focus:border-accent transition-all text-xs lg:text-sm text-white appearance-none"
                   />
                 </div>
                 
-                <div className="p-6 bg-accent/5 border border-accent/10 rounded-2xl backdrop-blur-sm">
-                  <p className="text-sm text-muted leading-relaxed font-light">
+                <div className="p-5 lg:p-6 bg-accent/5 border border-accent/10 rounded-xl lg:rounded-2xl backdrop-blur-sm">
+                  <p className="text-xs lg:text-sm text-muted leading-relaxed font-light">
                     <span className="font-bold text-accent">Pro Tip:</span> Scheduling posts for <span className="text-white font-medium">1 week</span> or <span className="text-white font-medium">1 month</span> ahead ensures consistent growth and better algorithm placement.
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 lg:gap-4 pt-4">
                 <button 
                   onClick={() => setShowScheduleModal(false)}
-                  className="flex-grow bg-white/5 border border-white/10 text-white py-4 rounded-2xl font-bold transition-all hover:bg-white/10 text-[11px] tracking-widest uppercase"
+                  className="flex-grow bg-white/5 border border-white/10 text-white py-3 lg:py-4 rounded-xl lg:rounded-2xl font-bold transition-all hover:bg-white/10 text-[9px] lg:text-[11px] tracking-widest uppercase"
                 >
                   CANCEL
                 </button>
                 <button 
                   onClick={() => handlePublish(true)}
                   disabled={!scheduleDate || isPublished}
-                  className="flex-grow bg-white hover:bg-white/90 text-black py-4 rounded-2xl font-bold transition-all disabled:opacity-50 text-[11px] tracking-widest uppercase shadow-xl shadow-white/5"
+                  className="flex-grow bg-white hover:bg-white/90 text-black py-3 lg:py-4 rounded-xl lg:rounded-2xl font-bold transition-all disabled:opacity-50 text-[9px] lg:text-[11px] tracking-widest uppercase shadow-xl shadow-white/5"
                 >
                   {isPublished ? 'SCHEDULING...' : 'CONFIRM SCHEDULE'}
                 </button>
