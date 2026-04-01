@@ -9,6 +9,7 @@ import {
   TrendingUp, 
   PenTool, 
   Video, 
+  Image as ImageIcon,
   Share2, 
   Search, 
   Zap, 
@@ -25,11 +26,25 @@ import {
   Globe,
   Clock,
   Calendar,
-  X
+  X,
+  Play,
+  Download,
+  AlertCircle,
+  Key,
+  Image
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { analyzeTrends, generateViralContent } from './lib/gemini';
+import { analyzeTrends, generateViralContent, generateVideo, generateImage, generateFreeVideoAssets } from './lib/gemini';
 import { cn } from './lib/utils';
+
+declare global {
+  interface Window {
+    aistudio: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}
 
 type Platform = 'Twitter' | 'Instagram' | 'LinkedIn' | 'TikTok' | 'YouTube';
 
@@ -40,6 +55,8 @@ interface Trend {
 }
 
 interface ViralContent {
+  virality_score: number;
+  virality_reason: string;
   platform_outputs: {
     twitter_thread?: {
       hook_tweet: string;
@@ -71,6 +88,7 @@ interface ViralContent {
     };
   };
   content_metadata: {
+    hooks_ab_test: string[];
     best_posting_times: {
       twitter: string;
       instagram: string;
@@ -90,7 +108,7 @@ export default function App() {
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>('Twitter');
   const [generatedContent, setGeneratedContent] = useState<ViralContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'scout' | 'write' | 'video' | 'preview' | 'settings'>('scout');
+  const [activeTab, setActiveTab] = useState<'scout' | 'write' | 'video' | 'image' | 'preview' | 'settings' | 'trends'>('scout');
   const [isPublished, setIsPublished] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,6 +136,113 @@ export default function App() {
   const [scheduledPosts, setScheduledPosts] = useState<{id: string, topic: string, platform: string, scheduledDate: string, status: 'scheduled' | 'published'}[]>([]);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleDate, setScheduleDate] = useState('');
+
+  // Video Generation State
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [videoMode, setVideoMode] = useState<'premium' | 'free'>('free');
+  const [freeVideoAssets, setFreeVideoAssets] = useState<{
+    voiceover_script: string;
+    b_roll_search_terms: string[];
+    on_screen_captions: { time: string; text: string }[];
+    thumbnail_concept: string;
+  } | null>(null);
+  const [isPlayingFreeVideo, setIsPlayingFreeVideo] = useState(false);
+  const [currentCaption, setCurrentCaption] = useState('');
+
+  // Image Generation State (Free)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [imageAspectRatio, setImageAspectRatio] = useState<'1:1' | '16:9' | '9:16'>('1:1');
+
+  useEffect(() => {
+    const checkApiKey = async () => {
+      if (window.aistudio) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasApiKey(selected);
+      }
+    };
+    checkApiKey();
+  }, []);
+
+  const handleOpenKeyDialog = async () => {
+    if (window.aistudio) {
+      await window.aistudio.openSelectKey();
+      setHasApiKey(true);
+    }
+  };
+
+  const handleGenerateVideo = async () => {
+    if (!videoPrompt) return;
+    setIsGeneratingVideo(true);
+    setError(null);
+    try {
+      if (videoMode === 'premium') {
+        const videoUrl = await generateVideo(videoPrompt);
+        setGeneratedVideoUrl(videoUrl);
+      } else {
+        const assets = await generateFreeVideoAssets(videoPrompt);
+        setFreeVideoAssets(assets);
+      }
+    } catch (err: any) {
+      console.error("Failed to generate video:", err);
+      const errorMessage = err.message || "";
+      if (errorMessage.includes("Requested entity was not found") || errorMessage.includes("PERMISSION_DENIED")) {
+        setHasApiKey(false);
+        setError("API Key error: Permission denied. Please ensure you have selected a paid API key from a project with billing enabled.");
+      } else {
+        setError("Failed to generate video. Please check your API key and try again.");
+      }
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  };
+
+  const handlePlayFreeVideo = () => {
+    if (!freeVideoAssets) return;
+    
+    setIsPlayingFreeVideo(true);
+    const utterance = new SpeechSynthesisUtterance(freeVideoAssets.voiceover_script);
+    utterance.rate = 1.1; // Slightly faster for viral feel
+    
+    // Simple caption sync based on time
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const caption = freeVideoAssets.on_screen_captions.find(c => {
+        const [m, s] = c.time.split(':').map(Number);
+        const timeInSec = m * 60 + s;
+        return elapsed >= timeInSec && elapsed < timeInSec + 3;
+      });
+      if (caption) setCurrentCaption(caption.text);
+    }, 100);
+
+    utterance.onend = () => {
+      setIsPlayingFreeVideo(false);
+      setCurrentCaption('');
+      clearInterval(interval);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleGenerateImage = async () => {
+    if (!imagePrompt) return;
+    setIsGeneratingImage(true);
+    setError(null);
+    try {
+      const imageUrl = await generateImage(imagePrompt, imageAspectRatio);
+      setGeneratedImageUrl(imageUrl);
+    } catch (err: any) {
+      console.error("Failed to generate image:", err);
+      setError("Failed to generate image. Please try again.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
 
   const fetchTrends = async () => {
     if (!seedTopic) {
@@ -253,6 +378,7 @@ export default function App() {
           {[
             { id: 'scout', label: 'SCOUT', icon: TrendingUp },
             { id: 'write', label: 'WRITE', icon: PenTool },
+            { id: 'image', label: 'IMAGE (FREE)', icon: ImageIcon },
             { id: 'video', label: 'VIDEO', icon: Video },
             { id: 'preview', label: 'PREVIEW', icon: Share2 },
             { id: 'settings', label: 'SETTINGS', icon: Settings },
@@ -373,6 +499,71 @@ export default function App() {
             </motion.section>
           )}
 
+          {activeTab === 'trends' && (
+            <motion.section
+              key="trends"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-12"
+            >
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                  <h2 className="font-display text-4xl font-extrabold mb-3 tracking-tight">Trend Scout</h2>
+                  <p className="text-muted text-base font-light">AI-powered global trend analysis for maximum virality.</p>
+                </div>
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                  <button className="px-4 py-2 rounded-lg bg-white text-black text-[10px] font-mono tracking-widest uppercase">GLOBAL</button>
+                  <button className="px-4 py-2 rounded-lg text-muted hover:text-white text-[10px] font-mono tracking-widest uppercase">LOCAL</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[
+                  { topic: "AI Agents in SaaS", score: 98, trend: "Rising", category: "Tech", color: "text-accent" },
+                  { topic: "Quiet Luxury Fashion", score: 84, trend: "Stable", category: "Lifestyle", color: "text-accent2" },
+                  { topic: "Sustainable Travel", score: 72, trend: "Rising", category: "Travel", color: "text-accent3" },
+                  { topic: "Remote Work 2.0", score: 91, trend: "Viral", category: "Business", color: "text-accent" },
+                  { topic: "Biohacking Routines", score: 65, trend: "Rising", category: "Health", color: "text-accent2" },
+                  { topic: "Web3 Gaming", score: 58, trend: "Falling", category: "Gaming", color: "text-muted" }
+                ].map((trend, i) => (
+                  <div key={i} className="glass-card p-8 rounded-3xl border-white/5 hover:border-white/20 transition-all group">
+                    <div className="flex justify-between items-start mb-6">
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-muted bg-white/5 px-3 py-1 rounded-full">{trend.category}</span>
+                      <div className={cn("flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-widest", trend.color)}>
+                        <TrendingUp size={12} /> {trend.trend}
+                      </div>
+                    </div>
+                    <h4 className="text-xl font-bold mb-6 tracking-tight group-hover:text-accent transition-colors">{trend.topic}</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-[9px] font-mono uppercase tracking-widest text-muted">
+                        <span>Virality Potential</span>
+                        <span>{trend.score}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${trend.score}%` }}
+                          transition={{ duration: 1, delay: i * 0.1 }}
+                          className={cn("h-full rounded-full", trend.color.replace('text-', 'bg-'))}
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setSelectedTopic(trend.topic);
+                        setActiveTab('write');
+                      }}
+                      className="w-full mt-8 py-4 rounded-2xl border border-white/5 bg-white/2 hover:bg-white/5 text-[10px] font-mono tracking-widest uppercase font-bold transition-all"
+                    >
+                      GENERATE CONTENT
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.section>
+          )}
+
           {activeTab === 'write' && (
             <motion.section
               key="write"
@@ -463,10 +654,53 @@ export default function App() {
                           <p className="font-mono text-[10px] tracking-[0.3em] uppercase animate-pulse">Crafting viral narrative</p>
                         </div>
                       ) : generatedContent ? (
-                        <div className="markdown-body font-light leading-relaxed text-lg">
-                          <ReactMarkdown>
-                            {getPlatformContentString()}
-                          </ReactMarkdown>
+                        <div className="space-y-12">
+                          {/* Virality Score Card */}
+                          <div className="flex flex-col md:flex-row gap-6">
+                            <div className="glass-card p-6 rounded-2xl flex-shrink-0 flex flex-col items-center justify-center min-w-[160px] border-accent2/20">
+                              <div className="text-4xl font-display font-black text-accent2 mb-1">{generatedContent.virality_score}%</div>
+                              <div className="text-[9px] font-mono uppercase tracking-widest text-muted">Virality Score</div>
+                            </div>
+                            <div className="glass-card p-6 rounded-2xl flex-grow bg-white/2 border-white/5">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Zap size={14} className="text-accent2" />
+                                <span className="text-[10px] font-mono uppercase tracking-widest text-muted">Strategist Insight</span>
+                              </div>
+                              <p className="text-sm text-muted font-light leading-relaxed italic">
+                                "{generatedContent.virality_reason}"
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Main Content */}
+                          <div className="markdown-body font-light leading-relaxed text-lg bg-white/2 p-8 rounded-3xl border border-white/5">
+                            <ReactMarkdown>
+                              {getPlatformContentString()}
+                            </ReactMarkdown>
+                          </div>
+
+                          {/* Hook A/B Tester */}
+                          {generatedContent.content_metadata.hooks_ab_test && (
+                            <div className="space-y-6">
+                              <div className="flex items-center gap-3">
+                                <Sparkles className="text-accent" size={18} />
+                                <h4 className="font-display text-xl font-bold tracking-tight">Viral Hook A/B Tester</h4>
+                              </div>
+                              <div className="grid grid-cols-1 gap-4">
+                                {generatedContent.content_metadata.hooks_ab_test.map((hook, i) => (
+                                  <div key={i} className="glass-card p-5 rounded-xl border-white/5 hover:border-accent/30 transition-all group flex items-center justify-between gap-4">
+                                    <p className="text-sm text-muted group-hover:text-white transition-colors">"{hook}"</p>
+                                    <button 
+                                      onClick={() => navigator.clipboard.writeText(hook)}
+                                      className="text-[9px] font-mono tracking-widest text-accent font-bold opacity-0 group-hover:opacity-100 transition-all"
+                                    >
+                                      USE HOOK
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="h-full flex flex-col items-center justify-center text-muted/20 text-center space-y-6">
@@ -481,6 +715,105 @@ export default function App() {
             </motion.section>
           )}
 
+          {activeTab === 'image' && (
+            <motion.section
+              key="image"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-12"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="space-y-8">
+                  <div className="glass-card p-10 rounded-3xl space-y-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-accent2/10 flex items-center justify-center">
+                        <ImageIcon className="text-accent2" size={24} />
+                      </div>
+                      <h3 className="font-display text-2xl font-bold tracking-tight">Free Image Generation</h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Image Prompt</label>
+                      <textarea 
+                        value={imagePrompt}
+                        onChange={(e) => setImagePrompt(e.target.value)}
+                        placeholder="Describe the viral image you want to create... (e.g., A futuristic workspace with neon lighting and high-tech gadgets)"
+                        className="w-full bg-white/5 border border-white/10 px-6 py-5 rounded-2xl focus:outline-none focus:border-accent2 transition-all text-sm min-h-[150px] resize-none"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Aspect Ratio</label>
+                      <div className="grid grid-cols-3 gap-4">
+                        {(['1:1', '16:9', '9:16'] as const).map((ratio) => (
+                          <button
+                            key={ratio}
+                            onClick={() => setImageAspectRatio(ratio)}
+                            className={cn(
+                              "py-3 rounded-xl border text-[10px] font-bold tracking-widest transition-all",
+                              imageAspectRatio === ratio 
+                                ? "bg-white text-black border-white" 
+                                : "bg-white/5 text-muted border-white/10 hover:bg-white/10"
+                            )}
+                          >
+                            {ratio}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage || !imagePrompt}
+                      className="w-full flex items-center justify-center gap-3 bg-white hover:bg-white/90 text-black py-5 rounded-2xl font-bold transition-all disabled:opacity-50 shadow-xl shadow-white/5"
+                    >
+                      {isGeneratingImage ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
+                      <span className="tracking-widest text-[11px] uppercase">{isGeneratingImage ? 'GENERATING...' : 'GENERATE FREE IMAGE'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-8">
+                  <div className={cn(
+                    "glass-card rounded-3xl overflow-hidden relative flex items-center justify-center bg-black/40 min-h-[400px]",
+                    imageAspectRatio === '9:16' ? 'aspect-[9/16] max-h-[700px]' : imageAspectRatio === '16:9' ? 'aspect-[16/9]' : 'aspect-square'
+                  )}>
+                    {isGeneratingImage ? (
+                      <div className="text-center space-y-4">
+                        <Loader2 className="animate-spin text-accent2 mx-auto" size={48} strokeWidth={1} />
+                        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-white animate-pulse">Creating Masterpiece</p>
+                      </div>
+                    ) : generatedImageUrl ? (
+                      <img 
+                        src={generatedImageUrl} 
+                        alt="Generated Viral Content" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="text-center space-y-6 text-muted/20">
+                        <ImageIcon size={80} strokeWidth={1} />
+                        <p className="font-mono text-[10px] tracking-[0.2em] uppercase">Image Preview Area</p>
+                      </div>
+                    )}
+
+                    {generatedImageUrl && !isGeneratingImage && (
+                      <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+                        <a 
+                          href={generatedImageUrl} 
+                          download="viral-image.png"
+                          className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-[10px] tracking-widest uppercase"
+                        >
+                          <Download size={16} /> DOWNLOAD
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.section>
+          )}
           {activeTab === 'video' && (
             <motion.section
               key="video"
@@ -489,34 +822,197 @@ export default function App() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-12"
             >
-              <div className="text-center py-32 glass-card rounded-3xl border border-white/5 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-accent3/10 to-transparent pointer-events-none" />
-                <Video size={64} strokeWidth={1} className="mx-auto text-accent3 mb-8" />
-                <h2 className="font-display text-4xl font-extrabold mb-4 tracking-tight">Video Generation Pipeline</h2>
-                <p className="text-muted max-w-lg mx-auto mb-12 text-lg font-light leading-relaxed">
-                  Convert your viral scripts into high-retention short-form videos using AI voiceovers and dynamic visuals.
-                </p>
-                <div className="flex flex-wrap justify-center gap-6 px-6">
-                  <div className="bg-white/5 border border-white/10 px-8 py-6 rounded-2xl text-left w-72 backdrop-blur-sm">
-                    <div className="text-accent3 font-mono text-[10px] mb-3 tracking-[0.2em] uppercase">Step 01</div>
-                    <div className="font-bold text-base mb-1">AI Voiceover</div>
-                    <div className="text-muted text-xs font-light">Realistic ElevenLabs integration</div>
+              {error && (
+                <div className="glass-card border-red-500/20 bg-red-500/5 p-6 rounded-2xl flex items-center gap-4 text-red-400">
+                  <AlertCircle size={20} />
+                  <p className="text-sm font-light">{error}</p>
+                  <button onClick={() => setError(null)} className="ml-auto hover:text-white transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              {!hasApiKey ? (
+                <div className="text-center py-32 glass-card rounded-3xl border border-white/5 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-b from-accent/10 to-transparent pointer-events-none" />
+                  <Key size={64} strokeWidth={1} className="mx-auto text-accent mb-8" />
+                  <h2 className="font-display text-4xl font-extrabold mb-4 tracking-tight">API Key Required</h2>
+                  <p className="text-muted max-w-lg mx-auto mb-12 text-lg font-light leading-relaxed">
+                    Video generation requires a paid Google Cloud project API key. Please select your key to continue.
+                  </p>
+                  <button 
+                    onClick={handleOpenKeyDialog}
+                    className="bg-white hover:bg-white/90 text-black px-10 py-5 rounded-2xl font-bold transition-all inline-flex items-center gap-3 shadow-xl shadow-white/5"
+                  >
+                    <span className="tracking-widest text-[11px] uppercase">SELECT API KEY</span> <ArrowRight size={18} />
+                  </button>
+                  <p className="mt-6 text-xs text-muted">
+                    Learn more about <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-white">Gemini API billing</a>.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                  <div className="space-y-8">
+                    <div className="glass-card p-10 rounded-3xl space-y-8">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-accent3/10 flex items-center justify-center">
+                            <Video className="text-accent3" size={24} />
+                          </div>
+                          <h3 className="font-display text-2xl font-bold tracking-tight">Video Generation</h3>
+                        </div>
+                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                          <button 
+                            onClick={() => setVideoMode('free')}
+                            className={cn(
+                              "px-4 py-2 rounded-lg text-[10px] font-mono tracking-widest transition-all",
+                              videoMode === 'free' ? "bg-white text-black" : "text-muted hover:text-white"
+                            )}
+                          >
+                            FREE
+                          </button>
+                          <button 
+                            onClick={() => setVideoMode('premium')}
+                            className={cn(
+                              "px-4 py-2 rounded-lg text-[10px] font-mono tracking-widest transition-all",
+                              videoMode === 'premium' ? "bg-white text-black" : "text-muted hover:text-white"
+                            )}
+                          >
+                            PREMIUM
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <label className="font-mono text-[9px] text-muted uppercase tracking-[0.2em]">Video Prompt</label>
+                        <textarea 
+                          value={videoPrompt}
+                          onChange={(e) => setVideoPrompt(e.target.value)}
+                          placeholder={videoMode === 'free' ? "Describe your viral video topic..." : "Describe the video you want to generate... (e.g., A neon hologram of a cat driving at top speed)"}
+                          className="w-full bg-white/5 border border-white/10 px-6 py-5 rounded-2xl focus:outline-none focus:border-accent3 transition-all text-sm min-h-[150px] resize-none"
+                        />
+                      </div>
+
+                      <div className="bg-white/5 border border-white/10 p-6 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Sparkles className="text-accent2" size={16} />
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-muted">{videoMode === 'free' ? 'Free Engine' : 'Premium Engine'}</span>
+                        </div>
+                        <ul className="text-xs text-muted space-y-2 font-light">
+                          {videoMode === 'free' ? (
+                            <>
+                              <li>• Uses browser TTS for voiceover (100% Free).</li>
+                              <li>• Generates viral scripts and B-roll concepts.</li>
+                              <li>• Perfect for quick social media hooks.</li>
+                            </>
+                          ) : (
+                            <>
+                              <li>• Uses Gemini Veo for high-fidelity video synthesis.</li>
+                              <li>• Requires a paid Google Cloud API key.</li>
+                              <li>• Cinematic quality with temporal consistency.</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+
+                      <button 
+                        onClick={handleGenerateVideo}
+                        disabled={isGeneratingVideo || !videoPrompt}
+                        className="w-full flex items-center justify-center gap-3 bg-white hover:bg-white/90 text-black py-5 rounded-2xl font-bold transition-all disabled:opacity-50 shadow-xl shadow-white/5"
+                      >
+                        {isGeneratingVideo ? <Loader2 className="animate-spin" size={20} /> : <Play size={20} />}
+                        <span className="tracking-widest text-[11px] uppercase">{isGeneratingVideo ? 'GENERATING...' : `GENERATE ${videoMode.toUpperCase()} VIDEO`}</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-white/5 border border-white/10 px-8 py-6 rounded-2xl text-left w-72 backdrop-blur-sm">
-                    <div className="text-accent3 font-mono text-[10px] mb-3 tracking-[0.2em] uppercase">Step 02</div>
-                    <div className="font-bold text-base mb-1">Visual Assets</div>
-                    <div className="text-muted text-xs font-light">Ideogram & Pexels B-roll</div>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 px-8 py-6 rounded-2xl text-left w-72 backdrop-blur-sm">
-                    <div className="text-accent3 font-mono text-[10px] mb-3 tracking-[0.2em] uppercase">Step 03</div>
-                    <div className="font-bold text-base mb-1">Auto-Assembly</div>
-                    <div className="text-muted text-xs font-light">FFmpeg cloud rendering</div>
+
+                  <div className="flex flex-col gap-8">
+                    <div className="glass-card rounded-3xl aspect-[9/16] max-h-[700px] overflow-hidden relative flex items-center justify-center bg-black/40">
+                      {isGeneratingVideo ? (
+                        <div className="text-center space-y-6 px-10">
+                          <div className="relative">
+                            <Loader2 className="animate-spin text-accent3 mx-auto" size={64} strokeWidth={1} />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-8 h-8 bg-accent3/20 rounded-full animate-ping" />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-white animate-pulse">
+                              {videoMode === 'free' ? 'Generating Assets' : 'Synthesizing Pixels'}
+                            </p>
+                            <p className="text-xs text-muted font-light">This usually takes about 30-60 seconds...</p>
+                          </div>
+                        </div>
+                      ) : videoMode === 'free' && freeVideoAssets ? (
+                        <div className="relative w-full h-full flex flex-col items-center justify-center p-10 text-center space-y-8">
+                          <div className="absolute inset-0 bg-gradient-to-b from-accent3/20 to-black/60" />
+                          
+                          {/* Visual Placeholder for B-Roll */}
+                          <div className="relative z-10 w-full aspect-square rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                            <ImageIcon size={48} className="text-white/20 animate-pulse" />
+                            <div className="absolute bottom-4 left-4 right-4 text-[8px] font-mono text-muted uppercase tracking-widest">
+                              B-Roll Idea: {freeVideoAssets.b_roll_search_terms[0]}
+                            </div>
+                          </div>
+
+                          {/* Captions */}
+                          <AnimatePresence mode="wait">
+                            {isPlayingFreeVideo && currentCaption && (
+                              <motion.div 
+                                key={currentCaption}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 1.1 }}
+                                className="relative z-20 bg-white text-black font-black text-2xl py-3 px-6 transform -rotate-1 shadow-2xl"
+                              >
+                                {currentCaption}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+
+                          {!isPlayingFreeVideo && (
+                            <button 
+                              onClick={handlePlayFreeVideo}
+                              className="relative z-20 w-20 h-20 rounded-full bg-white text-black flex items-center justify-center shadow-2xl hover:scale-110 transition-transform"
+                            >
+                              <Play size={32} fill="currentColor" />
+                            </button>
+                          )}
+
+                          <div className="relative z-10 space-y-2">
+                            <p className="text-sm text-white font-bold tracking-tight">Free Video Preview</p>
+                            <p className="text-xs text-muted font-light">Click play to hear the viral voiceover</p>
+                          </div>
+                        </div>
+                      ) : generatedVideoUrl ? (
+                        <video 
+                          src={generatedVideoUrl} 
+                          controls 
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          loop
+                        />
+                      ) : (
+                        <div className="text-center space-y-6 text-muted/20">
+                          <Video size={80} strokeWidth={1} />
+                          <p className="font-mono text-[10px] tracking-[0.2em] uppercase">Video Preview Area</p>
+                        </div>
+                      )}
+
+                      {generatedVideoUrl && !isGeneratingVideo && (
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-4">
+                          <a 
+                            href={generatedVideoUrl} 
+                            download="viral-video.mp4"
+                            className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 text-[10px] tracking-widest uppercase"
+                          >
+                            <Download size={16} /> DOWNLOAD
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <button className="mt-16 bg-white hover:bg-white/90 text-black px-10 py-5 rounded-2xl font-bold transition-all inline-flex items-center gap-3 shadow-xl shadow-white/5">
-                  <span className="tracking-widest text-[11px] uppercase">CONFIGURE PIPELINE</span> <ArrowRight size={18} />
-                </button>
-              </div>
+              )}
             </motion.section>
           )}
 

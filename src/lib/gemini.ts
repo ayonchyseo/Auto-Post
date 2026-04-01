@@ -13,77 +13,69 @@ export async function generateViralContent(
 ) {
   try {
     const prompt = `
-      ROLE: You are an elite viral content writer who has written posts with 10M+ views.
-      You understand platform algorithms deeply and write content that gets shared, saved, and engaged.
+      You are a viral social media strategist with 10+ years of experience growing accounts to 1M+ followers. 
+      Your specialty is writing content that triggers the "stop-scroll" reflex.
 
-      INPUT: 
-      Topic: ${topic}
-      Platform: ${platform}
-      Brand Voice: ${brandVoice}
-      Target Audience: ${targetAudience}
-      Content Length: ${settings.contentLength}
-      Emoji Density: ${settings.emojiDensity}
-      Auto-Optimize for Algorithm: ${settings.autoOptimize}
+      TASK: Given the TOPIC below, generate a viral post for the specified PLATFORM.
 
-      YOUR OUTPUT FORMAT — Return valid JSON only:
+      TOPIC: ${topic}
+      PLATFORM: ${platform}
+      BRAND VOICE: ${brandVoice}
+      TARGET AUDIENCE: ${targetAudience}
+
+      VIRAL POST FORMULA per platform:
+
+      TWITTER/X:
+      - Hook: Bold statement, question, or controversial take (1 line, max 12 words)
+      - Body: 3-5 punchy lines, each standalone readable
+      - CTA: Engagement bait (ask opinion, retweet prompt, or cliffhanger)
+      - Format: Thread if complex, single tweet if punchy
+      - Tone: Direct, slightly provocative, no fluff
+
+      LINKEDIN:
+      - Hook: Personal story opener OR shocking stat (2 lines)
+      - Body: 5-7 short paragraphs with line breaks (no walls of text)
+      - Lesson/Insight: 1 clear takeaway
+      - CTA: "What do you think?" or "Save this post"
+      - Tone: Professional but human, vulnerable = viral
+
+      INSTAGRAM (Caption):
+      - Hook: First line must stop scroll (question or bold claim)
+      - Body: Storytelling format, emoji-enhanced
+      - CTA: "Comment [WORD] for more" or tag a friend
+      - Hashtags: 5 niche + 5 medium + 3 trending (15 max)
+      - Tone: Relatable, aspirational, conversational
+
+      TIKTOK/REELS (Script):
+      - Hook: 3-second pattern interrupt
+      - Body: Fast-paced value or entertainment
+      - CTA: Follow for more or check bio
+      - Tone: High energy, authentic
+
+      OUTPUT FORMAT (Strict JSON):
       {
+        "virality_score": number (0-100),
+        "virality_reason": "string explaining why this will go viral",
         "platform_outputs": {
-          "twitter_thread": {
-            "hook_tweet": "string — must stop scroll in first 3 words",
-            "tweets": ["tweet 1", "tweet 2", "tweet 3", "tweet 4", "tweet 5"],
-            "cta_tweet": "string — drives retweet or follow"
-          },
-          "instagram_caption": {
-            "hook": "string — first line, no emoji overload, create curiosity gap",
-            "body": "string — storytelling format, 150-200 words",
-            "cta": "string",
-            "hashtags": "string — 15-20 relevant hashtags"
-          },
-          "tiktok_script": {
-            "hook_line": "string — spoken in first 2 seconds",
-            "script": "string — 30-60 second script, conversational, punchy sentences",
-            "on_screen_text": ["overlay text line 1", "line 2", "line 3"],
-            "trending_audio_suggestion": "string — describe the vibe of trending audio to use"
-          },
-          "linkedin_post": {
-            "opener": "string — bold statement or question, no 'I am excited to share'",
-            "body": "string — professional insight format, 200-250 words",
-            "cta": "string"
-          },
-          "youtube_shorts_script": {
-            "hook": "string — first 3 seconds",
-            "script": "string — 50-60 second script",
-            "title": "string — SEO optimized, curiosity-driven",
-            "description": "string — 150 words with keywords"
-          }
+          "twitter_thread": { "hook_tweet": "string", "tweets": ["string"], "cta_tweet": "string" },
+          "instagram_caption": { "hook": "string", "body": "string", "cta": "string", "hashtags": "string" },
+          "linkedin_post": { "opener": "string", "body": "string", "cta": "string" },
+          "tiktok_script": { "hook_line": "string", "script": "string", "on_screen_text": ["string"], "trending_audio_suggestion": "string" },
+          "youtube_shorts_script": { "title": "string", "hook": "string", "script": "string", "description": "string" }
         },
         "content_metadata": {
-          "best_posting_times": {
-            "twitter": "string",
-            "instagram": "string",
-            "tiktok": "string",
-            "linkedin": "string"
-          },
-          "repurpose_tip": "string — how to stretch this content into 5+ pieces"
+          "hooks_ab_test": ["string", "string", "string"],
+          "repurpose_tip": "string",
+          "best_posting_times": { "twitter": "string", "instagram": "string", "linkedin": "string" }
         }
       }
 
-      VIRAL WRITING RULES (follow all of them):
-      1. HOOK FORMULA: Open with curiosity gap, shock, or bold claim. Never start with 'I' or filler words.
-      2. PATTERN INTERRUPT: Use unexpected angles. If everyone says X, say "Actually, X is wrong, here's why"
-      3. SPECIFICITY: Use exact numbers. "73% of people" beats "most people"
-      4. STORYTELLING: Problem → Agitate → Resolve. Make them feel something.
-      5. SENTENCE LENGTH: Short. Punchy. Then a longer sentence to build context. Repeat.
-      6. SOCIAL PROOF TRIGGER: Reference "experts", "studies", or "data" even without citing
-      7. SAVE BAIT: Give so much value they HAVE to save it
-      8. SHARE TRIGGER: Make them look smart/funny/informed when they share it
-
-      PLATFORM-SPECIFIC RULES:
-      - TikTok: Start mid-action. Never say "Hey guys". Use "Wait—" or "Nobody talks about this:"
-      - Instagram: Use line breaks. Make it scannable. End with a question for comments.
-      - Twitter: Every tweet must be able to stand alone AND flow in sequence
-      - LinkedIn: Professional but human. Vulnerability performs. Data + story combo wins.
-      - YouTube Shorts: Say the payoff in the first 3 seconds to defeat skip button
+      RULES:
+      - Never use corporate jargon.
+      - Every post must have a "pattern interrupt" — something unexpected.
+      - Virality comes from emotion: awe, anger, inspiration, or humor.
+      - Shorter sentences = more shareable.
+      - Return ONLY the JSON object.
     `;
 
     const response = await ai.models.generateContent({
@@ -144,6 +136,133 @@ export async function analyzeTrends(seedTopic: string, platform: string = 'All P
     return JSON.parse(response.text);
   } catch (error) {
     console.error("Gemini Trend Analysis Error:", error);
+    throw error;
+  }
+}
+
+export async function generateVideo(prompt: string, aspectRatio: '16:9' | '9:16' = '9:16') {
+  // For Veo models, we MUST use the user-selected API key from process.env.API_KEY
+  // If it's not available, we fall back to GEMINI_API_KEY but this will likely fail for Veo
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY || "";
+  
+  if (!apiKey) {
+    throw new Error("No API key found. Please select a paid API key.");
+  }
+
+  const videoAi = new GoogleGenAI({ apiKey });
+
+  try {
+    let operation = await videoAi.models.generateVideos({
+      model: 'veo-3.1-lite-generate-preview',
+      prompt: prompt,
+      config: {
+        numberOfVideos: 1,
+        resolution: '1080p',
+        aspectRatio: aspectRatio
+      }
+    });
+
+    // Poll for completion
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      operation = await videoAi.operations.getVideosOperation({ operation: operation });
+    }
+
+    if (operation.error) {
+      throw new Error(JSON.stringify(operation.error));
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) throw new Error("Video generation failed - no download link");
+
+    // Fetch the video blob using the API key in headers
+    const response = await fetch(downloadLink, {
+      method: 'GET',
+      headers: {
+        'x-goog-api-key': apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to download video: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    console.error("Gemini Video Generation Error:", error);
+    throw error;
+  }
+}
+
+export async function generateImage(prompt: string, aspectRatio: '1:1' | '16:9' | '9:16' = '1:1') {
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+  
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        imageConfig: {
+          aspectRatio: aspectRatio
+        }
+      }
+    });
+
+    let imageUrl = "";
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        imageUrl = `data:image/png;base64,${part.inlineData.data}`;
+        break;
+      }
+    }
+
+    if (!imageUrl) throw new Error("Image generation failed - no image data returned");
+    return imageUrl;
+  } catch (error) {
+    console.error("Gemini Image Generation Error:", error);
+    throw error;
+  }
+}
+
+export async function generateFreeVideoAssets(topic: string) {
+  try {
+    const prompt = `
+      TASK: Generate assets for a 30-second viral video about: ${topic}
+      
+      OUTPUT FORMAT (JSON):
+      {
+        "voiceover_script": "string — the full script to be read by TTS",
+        "b_roll_search_terms": ["string", "string", "string"],
+        "on_screen_captions": [
+          { "time": "0:00", "text": "string" },
+          { "time": "0:05", "text": "string" }
+        ],
+        "thumbnail_concept": "string — description for image generation"
+      }
+      
+      RULES:
+      - Script must be engaging and fast-paced.
+      - Search terms should be optimized for stock video sites like Pexels.
+      - Return ONLY JSON.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
+
+    if (!response.text) {
+      throw new Error("No response text from Gemini");
+    }
+
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Gemini Free Video Asset Error:", error);
     throw error;
   }
 }
